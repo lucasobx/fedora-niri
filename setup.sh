@@ -49,31 +49,54 @@ ask_yn() {
 # =============================================================================
 
 divider
-echo -e "${BOLD} Optional packages — make your choices before we begin${RESET}"
+echo -e "${BOLD} Optional packages - make your choices before we begin${RESET}"
 divider
 
 # --- Optional DNF packages ---
 echo -e "\n${BOLD}DNF packages:${RESET}"
-OPT_TELEGRAM=false;    ask_yn "Install telegram-desktop?"    && OPT_TELEGRAM=true    || true
-OPT_QBITTORRENT=false; ask_yn "Install qbittorrent?"         && OPT_QBITTORRENT=true || true
-OPT_CALIBRE=false;     ask_yn "Install calibre?"             && OPT_CALIBRE=true     || true
-OPT_STEAM=false;       ask_yn "Install steam?"               && OPT_STEAM=true       || true
-OPT_MPV=false;         ask_yn "Install mpv?"                 && OPT_MPV=true         || true
-OPT_OBS=false;         ask_yn "Install obs-studio?"          && OPT_OBS=true         || true
-OPT_DISTROBOX=false;   ask_yn "Install distrobox?"           && OPT_DISTROBOX=true   || true
-OPT_VSCODE=false;      ask_yn "Install Visual Studio Code?"  && OPT_VSCODE=true      || true
-OPT_DOCKER=false;      ask_yn "Install Docker?"              && OPT_DOCKER=true      || true
+OPT_TELEGRAM=false;    ask_yn "Install Telegram?"                                      && OPT_TELEGRAM=true    || true
+OPT_QBITTORRENT=false; ask_yn "Install qBittorrent?"                                   && OPT_QBITTORRENT=true || true
+OPT_CALIBRE=false;     ask_yn "Install Calibre? (e-book manager and converter)"        && OPT_CALIBRE=true     || true
+OPT_STEAM=false;       ask_yn "Install Steam?"                                         && OPT_STEAM=true       || true
+OPT_MPV=false;         ask_yn "Install mpv? (media player)"                            && OPT_MPV=true         || true
+OPT_OBS=false;         ask_yn "Install OBS Studio?"                                    && OPT_OBS=true         || true
+OPT_DISTROBOX=false;   ask_yn "Install Distrobox? (run other distros in containers)"   && OPT_DISTROBOX=true   || true
+OPT_VSCODE=false;      ask_yn "Install Visual Studio Code?"                            && OPT_VSCODE=true      || true
+OPT_DOCKER=false;      ask_yn "Install Docker?"                                        && OPT_DOCKER=true      || true
 
 # --- Optional Flatpaks ---
 echo -e "\n${BOLD}Flatpak packages:${RESET}"
-OPT_HEROIC=false; ask_yn "Install Heroic Games Launcher (Flatpak)?" && OPT_HEROIC=true || true
-OPT_LIBRE=false;  ask_yn "Install Libre-Menu (Flatpak)?"            && OPT_LIBRE=true  || true
-OPT_YAC=false;    ask_yn "Install YACReader (Flatpak)?"             && OPT_YAC=true    || true
-OPT_ANKI=false;   ask_yn "Install Anki (Flatpak)?"                  && OPT_ANKI=true   || true
+OPT_HEROIC=false;     ask_yn "Install Heroic Games Launcher?"                                  && OPT_HEROIC=true     || true
+OPT_LIBRE=false;      ask_yn "Install Libre Menu Editor?"                                      && OPT_LIBRE=true      || true
+OPT_YAC=false;        ask_yn "Install YACReader? (comic and manga reader)"                     && OPT_YAC=true        || true
+OPT_ANKI=false;       ask_yn "Install Anki? (flashcard-based study tool)"                      && OPT_ANKI=true       || true
+OPT_SPOTIFY=false;    ask_yn "Install Spotify?"                                                && OPT_SPOTIFY=true    || true
+OPT_BOTTLES=false;    ask_yn "Install Bottles? (run Windows apps via Wine)"                    && OPT_BOTTLES=true    || true
+OPT_PROTONPLUS=false; ask_yn "Install ProtonPlus?"                                             && OPT_PROTONPLUS=true || true
+OPT_FLATSEAL=false;   ask_yn "Install Flatseal? (flatpak permissions manager)"                 && OPT_FLATSEAL=true   || true
+OPT_FOLIATE=false;    ask_yn "Install Foliate? (e-book reader)"                                && OPT_FOLIATE=true    || true
 
 # --- openfortivpn ---
 echo -e "\n${BOLD}VPN:${RESET}"
-OPT_VPN=false; ask_yn "Install openfortivpn?" && OPT_VPN=true || true
+OPT_VPN=false; ask_yn "Install openfortivpn? (FortiGate SSL VPN client)" && OPT_VPN=true || true
+
+# --- Neovim ---
+echo -e "\n${BOLD}Neovim:${RESET}"
+OPT_NEOVIM=false; NEOVIM_MODE=""
+if ask_yn "Install neovim?"; then
+    OPT_NEOVIM=true
+    echo "  Neovim setup:"
+    echo "    1) Vanilla - minimal config, no plugins"
+    echo "    2) LazyVim - full-featured distro with plugins"
+    while true; do
+        read -rp "  Select neovim setup [1/2]: " _nvim_choice
+        case "$_nvim_choice" in
+            1) NEOVIM_MODE="vanilla"; break ;;
+            2) NEOVIM_MODE="lazyvim"; break ;;
+            *) echo "    Please enter 1 or 2." ;;
+        esac
+    done
+fi
 
 # --- Keyboard layout ---
 echo -e "\n${BOLD}Keyboard layout:${RESET}"
@@ -140,6 +163,10 @@ if $OPT_GIT; then
     read -rp "  Email for Git: "                     GIT_EMAIL
 fi
 
+# --- asdf (installed via Homebrew) ---
+echo -e "\n${BOLD}Development tools:${RESET}"
+OPT_ASDF=false; ask_yn "Install asdf? (multi-language version manager, via Homebrew)" && OPT_ASDF=true || true
+
 # Summary before proceeding
 divider
 echo -e "${BOLD}  Summary — the following will be installed/configured${RESET}"
@@ -147,7 +174,9 @@ divider
 echo -e "  Keyboard:      ${KBD_LABEL}"
 echo -e "  Display:       eDP-1 ${EDP_RES}@${EDP_HZ} scale ${EDP_SCALE}"
 echo -e "  DNF optional:  telegram=${OPT_TELEGRAM}  qbittorrent=${OPT_QBITTORRENT}  calibre=${OPT_CALIBRE}  steam=${OPT_STEAM}  mpv=${OPT_MPV}  obs=${OPT_OBS}  distrobox=${OPT_DISTROBOX}  vscode=${OPT_VSCODE}  docker=${OPT_DOCKER}"
-echo -e "  Flatpak opt:   heroic=${OPT_HEROIC}  libremenu=${OPT_LIBRE}  yacreader=${OPT_YAC}  anki=${OPT_ANKI}"
+echo -e "  Flatpak opt:   heroic=${OPT_HEROIC}  libremenu=${OPT_LIBRE}  yacreader=${OPT_YAC}  anki=${OPT_ANKI}  spotify=${OPT_SPOTIFY}  bottles=${OPT_BOTTLES}  protonplus=${OPT_PROTONPLUS}  flatseal=${OPT_FLATSEAL}  foliate=${OPT_FOLIATE}"
+echo -e "  Neovim:        ${OPT_NEOVIM} $(if $OPT_NEOVIM; then echo "(${NEOVIM_MODE})"; fi)"
+echo -e "  asdf:          ${OPT_ASDF}"
 echo -e "  VPN:            ${OPT_VPN}"
 echo -e "  Git identity:   ${OPT_GIT} $(if $OPT_GIT; then echo "${GIT_NAME} <${GIT_EMAIL}>"; fi)"
 echo ""
@@ -221,7 +250,6 @@ DNF_PKGS=(
     libffi-devel
     gnome-tweaks
     fastfetch
-    neovim
     zoxide
     kanshi
     fuzzel
@@ -253,10 +281,17 @@ FLATPAK_PKGS=(
     net.nokyan.Resources
 )
 
-$OPT_HEROIC && FLATPAK_PKGS+=(com.heroicgameslauncher.hgl)
-$OPT_LIBRE  && FLATPAK_PKGS+=(page.codeberg.libre_menu_editor.LibreMenuEditor)
-$OPT_YAC    && FLATPAK_PKGS+=(com.yacreader.YACReader)
-$OPT_ANKI   && FLATPAK_PKGS+=(net.ankiweb.Anki)
+$OPT_HEROIC     && FLATPAK_PKGS+=(com.heroicgameslauncher.hgl)
+$OPT_LIBRE      && FLATPAK_PKGS+=(page.codeberg.libre_menu_editor.LibreMenuEditor)
+$OPT_YAC        && FLATPAK_PKGS+=(com.yacreader.YACReader)
+$OPT_ANKI       && FLATPAK_PKGS+=(net.ankiweb.Anki)
+$OPT_SPOTIFY    && FLATPAK_PKGS+=(com.spotify.Client)
+$OPT_BOTTLES    && FLATPAK_PKGS+=(com.usebottles.bottles)
+$OPT_PROTONPLUS && FLATPAK_PKGS+=(com.vysp3r.ProtonPlus)
+$OPT_FLATSEAL   && FLATPAK_PKGS+=(com.github.tchx84.Flatseal)
+$OPT_FOLIATE    && FLATPAK_PKGS+=(com.github.johnfactotum.Foliate)
+# DistroShelf is installed automatically alongside distrobox
+$OPT_DISTROBOX  && FLATPAK_PKGS+=(com.ranfdev.DistroShelf)
 
 flatpak install -y flathub "${FLATPAK_PKGS[@]}"
 
@@ -409,12 +444,15 @@ EOF
 info "~/.config/kitty/kitty.conf created"
 
 # =============================================================================
-# Step 12 - Configure neovim
+# Step 12 - Configure neovim (optional)
 # =============================================================================
-step "13 - Configuring neovim"
-mkdir -p ~/.config/nvim
+if $OPT_NEOVIM; then
+    step "13 - Configuring neovim (${NEOVIM_MODE})"
+    sudo dnf install -y neovim
+    mkdir -p ~/.config/nvim
 
-cat > ~/.config/nvim/init.lua << 'EOF'
+    if [[ "$NEOVIM_MODE" == "vanilla" ]]; then
+        cat > ~/.config/nvim/init.lua << 'EOF'
 vim.api.nvim_set_hl(0, "Normal", { bg = "none" })
 vim.opt.clipboard = "unnamedplus"
 
@@ -443,8 +481,16 @@ vim.opt.splitbelow = true
 vim.opt.swapfile = false
 vim.opt.undofile = true
 EOF
-
-info "~/.config/nvim/init.lua created"
+        info "Neovim vanilla config written to ~/.config/nvim/init.lua"
+    else
+        # LazyVim starter
+        git clone https://github.com/LazyVim/starter ~/.config/nvim
+        rm -rf ~/.config/nvim/.git
+        info "LazyVim starter cloned to ~/.config/nvim"
+    fi
+else
+    info "Skipping step 13 (neovim not requested)"
+fi
 
 # =============================================================================
 # Step 13 - Configure niri
@@ -864,6 +910,19 @@ else
 
     brew install gcc
     info "Homebrew and gcc installed"
+
+    # Install asdf if requested
+    if $OPT_ASDF; then
+        brew install asdf
+        # Add asdf shims to PATH in ~/.bashrc (idempotent)
+        if grep -q 'ASDF_DATA_DIR' ~/.bashrc; then
+            warn "asdf shims block already present in ~/.bashrc — skipping"
+        else
+            echo "" >> ~/.bashrc
+            echo 'export PATH="${ASDF_DATA_DIR:-$HOME/.asdf}/shims:$PATH"' >> ~/.bashrc
+        fi
+        info "asdf installed and shims added to ~/.bashrc"
+    fi
 fi
 
 # =============================================================================
@@ -882,6 +941,13 @@ divider
 echo -e "${BOLD}${GREEN}  ✓ Setup complete${RESET}"
 divider
 echo ""
+if $OPT_GIT; then
+    echo -e "${BOLD}  Git / SSH:${RESET}"
+    echo -e "  Git was configured for: ${GIT_NAME} <${GIT_EMAIL}>"
+    echo -e "  To create an SSH key, run:"
+    echo -e "    ${CYAN}ssh-keygen -t ed25519 -C \"${GIT_EMAIL}\"${RESET}"
+    echo ""
+fi
 if $OPT_VPN; then
     echo -e "${BOLD}  openfortivpn usage:${RESET}"
     echo -e "  Fill in your credentials at: ${CYAN}/etc/openfortivpn/config${RESET}"
