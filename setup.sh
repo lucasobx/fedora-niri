@@ -87,10 +87,6 @@ OPT_OBSIDIAN=false;   ask_yn "Install Obsidian?"                                
 OPT_STREMIO=false;    ask_yn "Install Stremio?"                                       && OPT_STREMIO=true    || true
 OPT_SLACK=false;      ask_yn "Install Slack?"                                         && OPT_SLACK=true      || true
 
-# --- openfortivpn ---
-echo -e "\n${BOLD}VPN:${RESET}"
-OPT_VPN=false; ask_yn "Install openfortivpn? (FortiGate SSL VPN client)" && OPT_VPN=true || true
-
 # --- Neovim ---
 echo -e "\n${BOLD}Neovim:${RESET}"
 OPT_NEOVIM=false; NEOVIM_MODE=""
@@ -192,7 +188,6 @@ echo -e "  DNF optional:  qbittorrent=${OPT_QBITTORRENT}  calibre=${OPT_CALIBRE}
 echo -e "  Flatpak opt:   telegram=${OPT_TELEGRAM}  vlc=${OPT_VLC}  heroic=${OPT_HEROIC}  libremenu=${OPT_LIBRE}  yacreader=${OPT_YAC}  anki=${OPT_ANKI}  spotify=${OPT_SPOTIFY}  bottles=${OPT_BOTTLES}  protonplus=${OPT_PROTONPLUS}  flatseal=${OPT_FLATSEAL}  foliate=${OPT_FOLIATE}  bitwarden=${OPT_BITWARDEN}  discord=${OPT_DISCORD}  obsidian=${OPT_OBSIDIAN}  stremio=${OPT_STREMIO}  slack=${OPT_SLACK}"
 echo -e "  Neovim:        ${OPT_NEOVIM} $(if $OPT_NEOVIM; then echo "(${NEOVIM_MODE})"; fi)"
 echo -e "  asdf:          ${OPT_ASDF}"
-echo -e "  VPN:           ${OPT_VPN}"
 echo -e "  Git identity:  ${OPT_GIT} $(if $OPT_GIT; then echo "${GIT_NAME} <${GIT_EMAIL}>"; fi)"
 echo -e "  Remove LibreOffice: ${OPT_REMOVE_LIBREOFFICE}"
 echo ""
@@ -810,44 +805,10 @@ gsettings set org.gnome.desktop.interface gtk-theme "adw-gtk3-dark"
 info "Legacy application theme set to adw-gtk3-dark"
 
 # =============================================================================
-# Step 16 - Install openfortivpn (optional)
-# =============================================================================
-if $OPT_VPN; then
-    step "16 - Installing openfortivpn"
-    sudo dnf install -y openfortivpn
-    sudo mkdir -p /etc/openfortivpn
-
-    # Create config file with commented placeholders
-    sudo tee /etc/openfortivpn/config > /dev/null << 'EOF'
-#host =
-#port =
-#username =
-#password =
-EOF
-    info "Config created at /etc/openfortivpn/config"
-
-    # Add VPN aliases to ~/.bashrc (idempotent)
-    if grep -q 'alias vpn=' ~/.bashrc; then
-        warn "VPN aliases already present in ~/.bashrc — skipping"
-    else
-        cat >> ~/.bashrc << 'EOF'
-
-# openfortivpn aliases
-alias vpn='sudo nohup openfortivpn >/tmp/openfortivpn.log 2>&1 &'
-alias vpnlog='tail -f /tmp/openfortivpn.log'
-alias vpnx='sudo pkill openfortivpn'
-EOF
-        info "VPN aliases added to ~/.bashrc"
-    fi
-else
-    info "Skipping step 16 (openfortivpn not requested)"
-fi
-
-# =============================================================================
-# Step 17 - Install Visual Studio Code (optional)
+# Step 16 - Install Visual Studio Code (optional)
 # =============================================================================
 if $OPT_VSCODE; then
-    step "17 - Installing Visual Studio Code"
+    step "16 - Installing Visual Studio Code"
     sudo rpm --import https://packages.microsoft.com/keys/microsoft.asc
     printf '[code]\nname=Visual Studio Code\nbaseurl=https://packages.microsoft.com/yumrepos/vscode\nenabled=1\nautorefresh=1\ntype=rpm-md\ngpgcheck=1\ngpgkey=https://packages.microsoft.com/keys/microsoft.asc\n' \
         | sudo tee /etc/yum.repos.d/vscode.repo > /dev/null
@@ -855,14 +816,14 @@ if $OPT_VSCODE; then
     sudo dnf install -y code
     info "Visual Studio Code installed"
 else
-    info "Skipping step 17 (VS Code not requested)"
+    info "Skipping step 16 (VS Code not requested)"
 fi
 
 # =============================================================================
-# Step 18 - Install Docker (optional)
+# Step 17 - Install Docker (optional)
 # =============================================================================
 if $OPT_DOCKER; then
-    step "18 - Installing Docker"
+    step "17 - Installing Docker"
     sudo dnf config-manager addrepo \
         --from-repofile https://download.docker.com/linux/fedora/docker-ce.repo
     sudo dnf install -y \
@@ -873,13 +834,13 @@ if $OPT_DOCKER; then
         docker-compose-plugin
     info "Docker installed"
 else
-    info "Skipping step 18 (Docker not requested)"
+    info "Skipping step 17 (Docker not requested)"
 fi
 
 # =============================================================================
-# Step 19 - Install Homebrew + gcc
+# Step 18 - Install Homebrew + gcc
 # =============================================================================
-step "19 - Installing Homebrew"
+step "18 - Installing Homebrew"
 
 if command -v brew &>/dev/null; then
     warn "Homebrew already installed — skipping"
@@ -916,9 +877,9 @@ else
 fi
 
 # =============================================================================
-# STEP 20: Install Monique
+# STEP 19: Install Monique
 # =============================================================================
-step "20 - Installing and configuring monique (Wayland monitor profile manager)"
+step "19 - Installing and configuring monique (Wayland monitor profile manager)"
 pipx install monique --system-site-packages
 
 mkdir -p ~/.local/share/applications
@@ -937,9 +898,9 @@ EOF
 info "monique installed and desktop entry created at ~/.local/share/applications/monique.desktop"
 
 # =============================================================================
-# Step 21 - System update, cleanup, and reboot
+# Step 20 - System update, cleanup, and reboot
 # =============================================================================
-step "21 - System update and cleanup"
+step "20 - System update and cleanup"
 sudo dnf upgrade -y
 sudo dnf remove -y rygel
 sudo dnf clean all
@@ -957,15 +918,6 @@ if $OPT_GIT; then
     echo -e "  Git was configured for: ${GIT_NAME} <${GIT_EMAIL}>"
     echo -e "  To create an SSH key, run:"
     echo -e "    ${CYAN}ssh-keygen -t ed25519 -C \"${GIT_EMAIL}\"${RESET}"
-    echo ""
-fi
-if $OPT_VPN; then
-    echo -e "${BOLD}  openfortivpn usage:${RESET}"
-    echo -e "  Fill in your credentials at: ${CYAN}/etc/openfortivpn/config${RESET}"
-    echo -e "  Then use the following aliases (available after reboot/re-login):"
-    echo -e "    ${CYAN}vpn${RESET}     — connect"
-    echo -e "    ${CYAN}vpnlog${RESET}  — follow the connection log"
-    echo -e "    ${CYAN}vpnx${RESET}    — disconnect"
     echo ""
 fi
 if $OPT_DOCKER; then
