@@ -54,27 +54,30 @@ divider
 
 # --- Optional DNF packages ---
 echo -e "\n${BOLD}DNF packages:${RESET}"
-OPT_TELEGRAM=false;    ask_yn "Install Telegram?"                                      && OPT_TELEGRAM=true    || true
-OPT_QBITTORRENT=false; ask_yn "Install qBittorrent?"                                   && OPT_QBITTORRENT=true || true
-OPT_CALIBRE=false;     ask_yn "Install Calibre? (e-book manager and converter)"        && OPT_CALIBRE=true     || true
-OPT_STEAM=false;       ask_yn "Install Steam?"                                         && OPT_STEAM=true       || true
-OPT_MPV=false;         ask_yn "Install mpv? (media player)"                            && OPT_MPV=true         || true
-OPT_OBS=false;         ask_yn "Install OBS Studio?"                                    && OPT_OBS=true         || true
-OPT_DISTROBOX=false;   ask_yn "Install Distrobox? (run other distros in containers)"   && OPT_DISTROBOX=true   || true
-OPT_VSCODE=false;      ask_yn "Install Visual Studio Code?"                            && OPT_VSCODE=true      || true
-OPT_DOCKER=false;      ask_yn "Install Docker?"                                        && OPT_DOCKER=true      || true
+OPT_QBITTORRENT=false; ask_yn "Install qBittorrent?"                                 && OPT_QBITTORRENT=true || true
+OPT_CALIBRE=false;     ask_yn "Install Calibre? (e-book manager and converter)"      && OPT_CALIBRE=true     || true
+OPT_STEAM=false;       ask_yn "Install Steam?"                                       && OPT_STEAM=true       || true
+OPT_MPV=false;         ask_yn "Install mpv? (media player)"                          && OPT_MPV=true         || true
+OPT_OBS=false;         ask_yn "Install OBS Studio?"                                  && OPT_OBS=true         || true
+OPT_LOVE=false;        ask_yn "Install love? (Lua game framework)"                   && OPT_LOVE=true        || true
+OPT_DISTROBOX=false;   ask_yn "Install Distrobox? (run other distros in containers)" && OPT_DISTROBOX=true   || true
+OPT_VSCODE=false;      ask_yn "Install Visual Studio Code?"                          && OPT_VSCODE=true      || true
+OPT_DOCKER=false;      ask_yn "Install Docker?"                                      && OPT_DOCKER=true      || true
 
 # --- Optional Flatpaks ---
 echo -e "\n${BOLD}Flatpak packages:${RESET}"
-OPT_HEROIC=false;     ask_yn "Install Heroic Games Launcher?"                                  && OPT_HEROIC=true     || true
-OPT_LIBRE=false;      ask_yn "Install Libre Menu Editor?"                                      && OPT_LIBRE=true      || true
-OPT_YAC=false;        ask_yn "Install YACReader? (comic and manga reader)"                     && OPT_YAC=true        || true
-OPT_ANKI=false;       ask_yn "Install Anki? (flashcard-based study tool)"                      && OPT_ANKI=true       || true
-OPT_SPOTIFY=false;    ask_yn "Install Spotify?"                                                && OPT_SPOTIFY=true    || true
-OPT_BOTTLES=false;    ask_yn "Install Bottles? (run Windows apps via Wine)"                    && OPT_BOTTLES=true    || true
-OPT_PROTONPLUS=false; ask_yn "Install ProtonPlus?"                                             && OPT_PROTONPLUS=true || true
-OPT_FLATSEAL=false;   ask_yn "Install Flatseal? (flatpak permissions manager)"                 && OPT_FLATSEAL=true   || true
-OPT_FOLIATE=false;    ask_yn "Install Foliate? (e-book reader)"                                && OPT_FOLIATE=true    || true
+OPT_TELEGRAM=false;   ask_yn "Install Telegram? (messaging app)"                      && OPT_TELEGRAM=true   || true
+OPT_VLC=false;        ask_yn "Install VLC? (versatile media player)"                  && OPT_VLC=true        || true
+OPT_BAZAAR=false;     ask_yn "Install Bazaar? (GNOME app store alternative)"          && OPT_BAZAAR=true     || true
+OPT_HEROIC=false;     ask_yn "Install Heroic Games Launcher?"                         && OPT_HEROIC=true     || true
+OPT_LIBRE=false;      ask_yn "Install Libre Menu Editor?"                             && OPT_LIBRE=true      || true
+OPT_YAC=false;        ask_yn "Install YACReader? (comic and manga reader)"            && OPT_YAC=true        || true
+OPT_ANKI=false;       ask_yn "Install Anki? (flashcard-based study tool)"             && OPT_ANKI=true       || true
+OPT_SPOTIFY=false;    ask_yn "Install Spotify?"                                       && OPT_SPOTIFY=true    || true
+OPT_BOTTLES=false;    ask_yn "Install Bottles? (run Windows apps via Wine)"           && OPT_BOTTLES=true    || true
+OPT_PROTONPLUS=false; ask_yn "Install ProtonPlus?"                                    && OPT_PROTONPLUS=true || true
+OPT_FLATSEAL=false;   ask_yn "Install Flatseal? (flatpak permissions manager)"        && OPT_FLATSEAL=true   || true
+OPT_FOLIATE=false;    ask_yn "Install Foliate? (e-book reader)"                       && OPT_FOLIATE=true    || true
 
 # --- openfortivpn ---
 echo -e "\n${BOLD}VPN:${RESET}"
@@ -173,12 +176,12 @@ echo -e "${BOLD}  Summary — the following will be installed/configured${RESET}
 divider
 echo -e "  Keyboard:      ${KBD_LABEL}"
 echo -e "  Display:       eDP-1 ${EDP_RES}@${EDP_HZ} scale ${EDP_SCALE}"
-echo -e "  DNF optional:  telegram=${OPT_TELEGRAM}  qbittorrent=${OPT_QBITTORRENT}  calibre=${OPT_CALIBRE}  steam=${OPT_STEAM}  mpv=${OPT_MPV}  obs=${OPT_OBS}  distrobox=${OPT_DISTROBOX}  vscode=${OPT_VSCODE}  docker=${OPT_DOCKER}"
-echo -e "  Flatpak opt:   heroic=${OPT_HEROIC}  libremenu=${OPT_LIBRE}  yacreader=${OPT_YAC}  anki=${OPT_ANKI}  spotify=${OPT_SPOTIFY}  bottles=${OPT_BOTTLES}  protonplus=${OPT_PROTONPLUS}  flatseal=${OPT_FLATSEAL}  foliate=${OPT_FOLIATE}"
+echo -e "  DNF optional:  qbittorrent=${OPT_QBITTORRENT}  calibre=${OPT_CALIBRE}  steam=${OPT_STEAM}  obs=${OPT_OBS}  love=${OPT_LOVE}  distrobox=${OPT_DISTROBOX}  vscode=${OPT_VSCODE}  docker=${OPT_DOCKER}"
+echo -e "  Flatpak opt:   telegram=${OPT_TELEGRAM}  vlc=${OPT_VLC}  bazaar=${OPT_BAZAAR}  heroic=${OPT_HEROIC}  libremenu=${OPT_LIBRE}  yacreader=${OPT_YAC}  anki=${OPT_ANKI}  spotify=${OPT_SPOTIFY}  bottles=${OPT_BOTTLES}  protonplus=${OPT_PROTONPLUS}  flatseal=${OPT_FLATSEAL}  foliate=${OPT_FOLIATE}"
 echo -e "  Neovim:        ${OPT_NEOVIM} $(if $OPT_NEOVIM; then echo "(${NEOVIM_MODE})"; fi)"
 echo -e "  asdf:          ${OPT_ASDF}"
-echo -e "  VPN:            ${OPT_VPN}"
-echo -e "  Git identity:   ${OPT_GIT} $(if $OPT_GIT; then echo "${GIT_NAME} <${GIT_EMAIL}>"; fi)"
+echo -e "  VPN:           ${OPT_VPN}"
+echo -e "  Git identity:  ${OPT_GIT} $(if $OPT_GIT; then echo "${GIT_NAME} <${GIT_EMAIL}>"; fi)"
 echo ""
 ask_yn "Proceed?" || { echo "Aborted."; exit 0; }
 
@@ -246,12 +249,9 @@ DNF_PKGS=(
     google-noto-emoji-fonts
     google-noto-fonts-all
     adw-gtk3-theme
-    libyaml-devel
-    libffi-devel
     gnome-tweaks
     fastfetch
     zoxide
-    kanshi
     fuzzel
     kitty
     unrar
@@ -260,14 +260,16 @@ DNF_PKGS=(
     zip
 )
 
+# libyaml-devel and libffi-devel only if asdf will be installed
+$OPT_ASDF && DNF_PKGS+=(libyaml-devel libffi-devel)
+
 # Optional packages selected earlier
-$OPT_TELEGRAM    && DNF_PKGS+=(telegram-desktop)
 $OPT_QBITTORRENT && DNF_PKGS+=(qbittorrent)
 $OPT_CALIBRE     && DNF_PKGS+=(calibre)
 $OPT_STEAM       && DNF_PKGS+=(steam)
-$OPT_MPV         && DNF_PKGS+=(mpv)
 $OPT_OBS         && DNF_PKGS+=(obs-studio)
 $OPT_DISTROBOX   && DNF_PKGS+=(distrobox)
+$OPT_LOVE        && DNF_PKGS+=(love)
 
 sudo dnf install -y "${DNF_PKGS[@]}"
 
@@ -281,6 +283,9 @@ FLATPAK_PKGS=(
     net.nokyan.Resources
 )
 
+$OPT_TELEGRAM   && FLATPAK_PKGS+=(org.telegram.desktop)
+$OPT_VLC        && FLATPAK_PKGS+=(org.videolan.VLC)
+$OPT_BAZAAR     && FLATPAK_PKGS+=(io.github.kolunmi.Bazaar)
 $OPT_HEROIC     && FLATPAK_PKGS+=(com.heroicgameslauncher.hgl)
 $OPT_LIBRE      && FLATPAK_PKGS+=(page.codeberg.libre_menu_editor.LibreMenuEditor)
 $OPT_YAC        && FLATPAK_PKGS+=(com.yacreader.YACReader)
@@ -370,25 +375,6 @@ EOF
 fi
 
 # =============================================================================
-# Step 9 - Configure kanshi
-# =============================================================================
-step "10 - Configuring kanshi"
-mkdir -p ~/.config/kanshi
-
-cat > ~/.config/kanshi/config << EOF
-profile {
-    output eDP-1 enable mode ${EDP_RES}@${EDP_HZ} scale ${EDP_SCALE}
-}
-
-profile {
-    output eDP-1 disable
-    output HDMI-A-3 enable mode 3840x2160@60Hz scale 1
-}
-EOF
-
-info "~/.config/kanshi/config created"
-
-# =============================================================================
 # Step 10 - Configure fuzzel
 # =============================================================================
 step "11 - Configuring fuzzel"
@@ -447,7 +433,7 @@ info "~/.config/kitty/kitty.conf created"
 # Step 12 - Configure neovim (optional)
 # =============================================================================
 if $OPT_NEOVIM; then
-    step "13 - Configuring neovim (${NEOVIM_MODE})"
+    step "10 (optional) - Configuring neovim (${NEOVIM_MODE})"
     sudo dnf install -y neovim
     mkdir -p ~/.config/nvim
 
@@ -493,7 +479,19 @@ else
 fi
 
 # =============================================================================
-# Step 13 - Configure niri
+# Step 13 - Install wallpapers
+# =============================================================================
+step "13 - Installing wallpapers"
+
+_WALL_TMP="$(mktemp -d)"
+git clone https://github.com/lucasobx/fedora-niri.git "${_WALL_TMP}/fedora-niri"
+mkdir -p ~/Pictures
+mv "${_WALL_TMP}/fedora-niri/Wallpapers" ~/Pictures/Wallpapers
+rm -rf "${_WALL_TMP}"
+info "Wallpapers installed to ~/Pictures/Wallpapers"
+
+# =============================================================================
+# Step 14 - Configure niri
 # =============================================================================
 step "14 - Configuring niri"
 mkdir -p ~/.config/niri
@@ -511,6 +509,9 @@ else
             options "ctrl:nocaps"
         }'
 fi
+
+# Strip "Hz" suffix for niri mode format
+EDP_HZ_NUM="${EDP_HZ%Hz}"
 
 cat > ~/.config/niri/config.kdl << EOF
 input {
@@ -532,6 +533,11 @@ ${XKB_BLOCK}
 
     warp-mouse-to-focus
     focus-follows-mouse max-scroll-amount="0%"
+}
+
+output "eDP-1" {
+    mode "${EDP_RES}@${EDP_HZ_NUM}"
+    scale ${EDP_SCALE}
 }
 
 layout {
@@ -561,7 +567,6 @@ layout {
 }
 
 spawn-at-startup "qs" "-c" "noctalia-shell"
-spawn-at-startup "kanshi"
 
 prefer-no-csd
 
@@ -738,9 +743,9 @@ EOF
 info "~/.config/niri/config.kdl created"
 
 # =============================================================================
-# Step 14 - Install and configure Numix icons + themes
+# Step 16 - Install and configure Numix icons + themes
 # =============================================================================
-step "15 - Installing Numix icons and configuring themes"
+step "16 - Installing Numix icons and configuring themes"
 
 _NUMIX_TMP="$(mktemp -d)"
 cd "$_NUMIX_TMP"
@@ -782,7 +787,7 @@ info "Legacy application theme set to adw-gtk3-dark"
 # Step 16 - Install openfortivpn (optional)
 # =============================================================================
 if $OPT_VPN; then
-    step "16 - Installing openfortivpn"
+    step "17 - Installing openfortivpn"
     sudo dnf install -y openfortivpn
     sudo mkdir -p /etc/openfortivpn
 
@@ -813,48 +818,7 @@ else
 fi
 
 # =============================================================================
-# Step 17 - Configure mpv (optional)
-# =============================================================================
-if $OPT_MPV; then
-    step "17 - Configuring mpv"
-    mkdir -p ~/.config/mpv/fonts
-    mkdir -p ~/.config/mpv/scripts
-    mkdir -p ~/.config/mpv/script-opts
-
-    # Download ModernX UI script
-    curl -fsSL https://raw.githubusercontent.com/cyl0/ModernX/refs/heads/main/modernx.lua \
-        -o ~/.config/mpv/scripts/modernx.lua
-    info "ModernX script downloaded"
-
-    # mpv.conf
-    cat > ~/.config/mpv/mpv.conf << 'EOF'
-osc=no
-sub-auto=fuzzy
-EOF
-
-    # osc.conf
-    cat > ~/.config/mpv/script-opts/osc.conf << 'EOF'
-title=
-hidetimeout=300
-EOF
-
-    # Download and extract Material Design Iconic Font
-    _MPV_TMP="$(mktemp -d)"
-    curl -fsSL \
-        "https://github.com/zavoloklom/material-design-iconic-font/releases/download/2.2.0/material-design-iconic-font.zip" \
-        -o "${_MPV_TMP}/mdi.zip"
-    unzip -q "${_MPV_TMP}/mdi.zip" -d "${_MPV_TMP}/mdi"
-    mv "${_MPV_TMP}/mdi/fonts/Material-Design-Iconic-Font.ttf" ~/.config/mpv/fonts/
-    rm -rf "${_MPV_TMP}"
-    info "Material Design Iconic Font installed"
-
-    info "~/.config/mpv configured"
-else
-    info "Skipping step 17 (mpv not installed)"
-fi
-
-# =============================================================================
-# Step 18 - Install Visual Studio Code (optional)
+# Step 17 - Install Visual Studio Code (optional)
 # =============================================================================
 if $OPT_VSCODE; then
     step "18 - Installing Visual Studio Code"
