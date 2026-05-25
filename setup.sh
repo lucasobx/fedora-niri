@@ -219,9 +219,10 @@ sudo dnf update -y
 # =============================================================================
 step "3 - Removing unwanted pre-installed packages"
 
-# Remove LibreOffice
-sudo dnf group remove -y libreoffice
-sudo dnf remove -y 'libreoffice-*' || true
+if $OPT_REMOVE_LIBREOFFICE; then
+    sudo dnf group remove -y libreoffice
+    sudo dnf remove -y 'libreoffice-*' || true
+fi
 
 # Remove unwanted GNOME apps
 sudo dnf remove -y \
