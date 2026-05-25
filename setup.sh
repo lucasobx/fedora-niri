@@ -62,12 +62,16 @@ OPT_LOVE=false;        ask_yn "Install love? (Lua game framework)"              
 OPT_DISTROBOX=false;   ask_yn "Install Distrobox? (run other distros in containers)" && OPT_DISTROBOX=true   || true
 OPT_VSCODE=false;      ask_yn "Install Visual Studio Code?"                          && OPT_VSCODE=true      || true
 OPT_DOCKER=false;      ask_yn "Install Docker?"                                      && OPT_DOCKER=true      || true
+OPT_RETROARCH=false;   ask_yn "Install RetroArch?"                                   && OPT_RETROARCH=true   || true
+OPT_AUDACITY=false;    ask_yn "Install Audacity?"                                    && OPT_AUDACITY=true    || true
+OPT_KDENLIVE=false;    ask_yn "Install Kdenlive?"                                    && OPT_KDENLIVE=true    || true
+OPT_LUTRIS=false;      ask_yn "Install Lutris?"                                      && OPT_LUTRIS=true      || true
+OPT_GIMP=false;        ask_yn "Install GIMP?"                                        && OPT_GIMP=true        || true
 
 # --- Optional Flatpaks ---
 echo -e "\n${BOLD}Flatpak packages:${RESET}"
 OPT_TELEGRAM=false;   ask_yn "Install Telegram? (messaging app)"                      && OPT_TELEGRAM=true   || true
 OPT_VLC=false;        ask_yn "Install VLC? (versatile media player)"                  && OPT_VLC=true        || true
-OPT_BAZAAR=false;     ask_yn "Install Bazaar? (GNOME app store alternative)"          && OPT_BAZAAR=true     || true
 OPT_HEROIC=false;     ask_yn "Install Heroic Games Launcher?"                         && OPT_HEROIC=true     || true
 OPT_LIBRE=false;      ask_yn "Install Libre Menu Editor?"                             && OPT_LIBRE=true      || true
 OPT_YAC=false;        ask_yn "Install YACReader? (comic and manga reader)"            && OPT_YAC=true        || true
@@ -77,6 +81,11 @@ OPT_BOTTLES=false;    ask_yn "Install Bottles? (run Windows apps via Wine)"     
 OPT_PROTONPLUS=false; ask_yn "Install ProtonPlus?"                                    && OPT_PROTONPLUS=true || true
 OPT_FLATSEAL=false;   ask_yn "Install Flatseal? (flatpak permissions manager)"        && OPT_FLATSEAL=true   || true
 OPT_FOLIATE=false;    ask_yn "Install Foliate? (e-book reader)"                       && OPT_FOLIATE=true    || true
+OPT_BITWARDEN=false;  ask_yn "Install Bitwarden? (password manager)"                  && OPT_BITWARDEN=true  || true
+OPT_DISCORD=false;    ask_yn "Install Discord?"                                       && OPT_DISCORD=true    || true
+OPT_OBSIDIAN=false;   ask_yn "Install Obsidian?"                                      && OPT_OBSIDIAN=true   || true
+OPT_STREMIO=false;    ask_yn "Install Stremio?"                                       && OPT_STREMIO=true    || true
+OPT_SLACK=false;      ask_yn "Install Slack?"                                         && OPT_SLACK=true      || true
 
 # --- openfortivpn ---
 echo -e "\n${BOLD}VPN:${RESET}"
@@ -169,18 +178,23 @@ fi
 echo -e "\n${BOLD}Development tools:${RESET}"
 OPT_ASDF=false; ask_yn "Install asdf? (multi-language version manager, via Homebrew)" && OPT_ASDF=true || true
 
+# --- Remove LibreOffice? ---
+echo -e "\n${BOLD}LibreOffice removal:${RESET}"
+OPT_REMOVE_LIBREOFFICE=false; ask_yn "Remove LibreOffice (pre-installed)?" && OPT_REMOVE_LIBREOFFICE=true || true
+
 # Summary before proceeding
 divider
 echo -e "${BOLD}  Summary — the following will be installed/configured${RESET}"
 divider
 echo -e "  Keyboard:      ${KBD_LABEL}"
 echo -e "  Display:       eDP-1 ${EDP_RES}@${EDP_HZ} scale ${EDP_SCALE}"
-echo -e "  DNF optional:  qbittorrent=${OPT_QBITTORRENT}  calibre=${OPT_CALIBRE}  steam=${OPT_STEAM}  obs=${OPT_OBS}  love=${OPT_LOVE}  distrobox=${OPT_DISTROBOX}  vscode=${OPT_VSCODE}  docker=${OPT_DOCKER}"
-echo -e "  Flatpak opt:   telegram=${OPT_TELEGRAM}  vlc=${OPT_VLC}  bazaar=${OPT_BAZAAR}  heroic=${OPT_HEROIC}  libremenu=${OPT_LIBRE}  yacreader=${OPT_YAC}  anki=${OPT_ANKI}  spotify=${OPT_SPOTIFY}  bottles=${OPT_BOTTLES}  protonplus=${OPT_PROTONPLUS}  flatseal=${OPT_FLATSEAL}  foliate=${OPT_FOLIATE}"
+echo -e "  DNF optional:  qbittorrent=${OPT_QBITTORRENT}  calibre=${OPT_CALIBRE}  steam=${OPT_STEAM}  obs=${OPT_OBS}  love=${OPT_LOVE}  distrobox=${OPT_DISTROBOX}  vscode=${OPT_VSCODE}  docker=${OPT_DOCKER}  retroarch=${OPT_RETROARCH}  audacity=${OPT_AUDACITY}  kdenlive=${OPT_KDENLIVE}  lutris=${OPT_LUTRIS}  gimp=${OPT_GIMP}"
+echo -e "  Flatpak opt:   telegram=${OPT_TELEGRAM}  vlc=${OPT_VLC}  heroic=${OPT_HEROIC}  libremenu=${OPT_LIBRE}  yacreader=${OPT_YAC}  anki=${OPT_ANKI}  spotify=${OPT_SPOTIFY}  bottles=${OPT_BOTTLES}  protonplus=${OPT_PROTONPLUS}  flatseal=${OPT_FLATSEAL}  foliate=${OPT_FOLIATE}  bitwarden=${OPT_BITWARDEN}  discord=${OPT_DISCORD}  obsidian=${OPT_OBSIDIAN}  stremio=${OPT_STREMIO}  slack=${OPT_SLACK}"
 echo -e "  Neovim:        ${OPT_NEOVIM} $(if $OPT_NEOVIM; then echo "(${NEOVIM_MODE})"; fi)"
 echo -e "  asdf:          ${OPT_ASDF}"
 echo -e "  VPN:           ${OPT_VPN}"
 echo -e "  Git identity:  ${OPT_GIT} $(if $OPT_GIT; then echo "${GIT_NAME} <${GIT_EMAIL}>"; fi)"
+echo -e "  Remove LibreOffice: ${OPT_REMOVE_LIBREOFFICE}"
 echo ""
 ask_yn "Proceed?" || { echo "Aborted."; exit 0; }
 
@@ -249,12 +263,13 @@ DNF_PKGS=(
     google-noto-fonts-all
     adw-gtk3-theme
     gnome-tweaks
+    python3-pip
     fastfetch
     zoxide
     fuzzel
     kitty
-    unrar
     unzip
+    unrar
     7zip
     zip
 )
@@ -269,22 +284,31 @@ $OPT_STEAM       && DNF_PKGS+=(steam)
 $OPT_OBS         && DNF_PKGS+=(obs-studio)
 $OPT_DISTROBOX   && DNF_PKGS+=(distrobox)
 $OPT_LOVE        && DNF_PKGS+=(love)
+$OPT_RETROARCH   && DNF_PKGS+=(retroarch)
+$OPT_AUDACITY    && DNF_PKGS+=(audacity)
+$OPT_KDENLIVE    && DNF_PKGS+=(kdenlive)
+$OPT_LUTRIS      && DNF_PKGS+=(lutris)
+$OPT_GIMP        && DNF_PKGS+=(gimp)
 
 sudo dnf install -y "${DNF_PKGS[@]}"
 
+step "Installing pipx"
+sudo dnf install -y pipx
+pipx ensurepath
+
 # =============================================================================
-# Step 4 - Install Flatpaks
+# Step 5 - Install Flatpaks
 # =============================================================================
 step "5 - Installing Flatpaks"
 
 FLATPAK_PKGS=(
     org.localsend.localsend_app
+    io.github.kolunmi.Bazaar
     net.nokyan.Resources
 )
 
 $OPT_TELEGRAM   && FLATPAK_PKGS+=(org.telegram.desktop)
 $OPT_VLC        && FLATPAK_PKGS+=(org.videolan.VLC)
-$OPT_BAZAAR     && FLATPAK_PKGS+=(io.github.kolunmi.Bazaar)
 $OPT_HEROIC     && FLATPAK_PKGS+=(com.heroicgameslauncher.hgl)
 $OPT_LIBRE      && FLATPAK_PKGS+=(page.codeberg.libre_menu_editor.LibreMenuEditor)
 $OPT_YAC        && FLATPAK_PKGS+=(com.yacreader.YACReader)
@@ -294,8 +318,12 @@ $OPT_BOTTLES    && FLATPAK_PKGS+=(com.usebottles.bottles)
 $OPT_PROTONPLUS && FLATPAK_PKGS+=(com.vysp3r.ProtonPlus)
 $OPT_FLATSEAL   && FLATPAK_PKGS+=(com.github.tchx84.Flatseal)
 $OPT_FOLIATE    && FLATPAK_PKGS+=(com.github.johnfactotum.Foliate)
-# DistroShelf is installed automatically alongside distrobox
 $OPT_DISTROBOX  && FLATPAK_PKGS+=(com.ranfdev.DistroShelf)
+$OPT_BITWARDEN  && FLATPAK_PKGS+=(com.bitwarden.desktop)
+$OPT_DISCORD    && FLATPAK_PKGS+=(com.discordapp.Discord)
+$OPT_OBSIDIAN   && FLATPAK_PKGS+=(md.obsidian.Obsidian)
+$OPT_STREMIO    && FLATPAK_PKGS+=(com.stremio.Stremio)
+$OPT_SLACK      && FLATPAK_PKGS+=(com.slack.Slack)
 
 flatpak install -y flathub "${FLATPAK_PKGS[@]}"
 
