@@ -252,7 +252,8 @@ sudo dnf remove -y \
     malcontent-control \
     malcontent-tools \
     ibus-typing-booster \
-    gnome-color-manager || true
+    gnome-color-manager \
+    gnome-software || true
 
 # =============================================================================
 # Step 4 - Install DNF packages
