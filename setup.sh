@@ -512,11 +512,8 @@ fi
 # =============================================================================
 step "13 - Installing wallpapers"
 
-_WALL_TMP="$(mktemp -d)"
-git clone https://github.com/lucasobx/fedora-niri.git "${_WALL_TMP}/fedora-niri"
 mkdir -p ~/Pictures
-mv "${_WALL_TMP}/fedora-niri/Wallpapers" ~/Pictures/Wallpapers
-rm -rf "${_WALL_TMP}"
+mv ~/fedora-niri/Wallpapers ~/Pictures/Wallpapers
 info "Wallpapers installed to ~/Pictures/Wallpapers"
 
 # =============================================================================
