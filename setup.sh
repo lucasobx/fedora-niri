@@ -57,7 +57,6 @@ echo -e "\n${BOLD}DNF packages:${RESET}"
 OPT_QBITTORRENT=false; ask_yn "Install qBittorrent?"                                 && OPT_QBITTORRENT=true || true
 OPT_CALIBRE=false;     ask_yn "Install Calibre? (e-book manager and converter)"      && OPT_CALIBRE=true     || true
 OPT_STEAM=false;       ask_yn "Install Steam?"                                       && OPT_STEAM=true       || true
-OPT_MPV=false;         ask_yn "Install mpv? (media player)"                          && OPT_MPV=true         || true
 OPT_OBS=false;         ask_yn "Install OBS Studio?"                                  && OPT_OBS=true         || true
 OPT_LOVE=false;        ask_yn "Install love? (Lua game framework)"                   && OPT_LOVE=true        || true
 OPT_DISTROBOX=false;   ask_yn "Install Distrobox? (run other distros in containers)" && OPT_DISTROBOX=true   || true
