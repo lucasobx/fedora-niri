@@ -919,6 +919,27 @@ else
 fi
 
 # =============================================================================
+# STEP 20: Install Monique
+# =============================================================================
+step "20 - Installing and configuring monique (Wayland monitor profile manager)"
+pipx install monique --system-site-packages
+
+mkdir -p ~/.local/share/applications
+cat > ~/.local/share/applications/monique.desktop << 'EOF'
+[Desktop Entry]
+Type=Application
+Name=Monique
+Comment=Wayland monitor profile manager
+Exec=/usr/bin/env monique
+Icon=preferences-desktop-display-randr
+Terminal=false
+Categories=Settings;System;
+StartupNotify=true
+Hidden=false
+EOF
+info "monique installed and desktop entry created at ~/.local/share/applications/monique.desktop"
+
+# =============================================================================
 # Step 21 - System update, cleanup, and reboot
 # =============================================================================
 step "21 - System update and cleanup"
