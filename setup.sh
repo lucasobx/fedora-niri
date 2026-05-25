@@ -346,7 +346,7 @@ else
 fi
 
 # =============================================================================
-# Step 6 - Configure ~/.bashrc
+# Step 7 - Configure ~/.bashrc
 # =============================================================================
 step "7 - Configuring ~/.bashrc"
 
@@ -363,7 +363,7 @@ EOF
 fi
 
 # =============================================================================
-# Step 7 - Install niri and noctalia-shell
+# Step 8 - Install niri and noctalia-shell
 # =============================================================================
 step "8 - Installing niri and noctalia-shell"
 
@@ -384,7 +384,7 @@ sudo dnf install -y niri --setopt=install_weak_deps=False
 sudo dnf install -y noctalia-shell
 
 # =============================================================================
-# Step 8 - Configure environment variables
+# Step 9 - Configure environment variables
 # =============================================================================
 step "9 - Configuring environment variables"
 
@@ -406,7 +406,7 @@ fi
 # =============================================================================
 # Step 10 - Configure fuzzel
 # =============================================================================
-step "11 - Configuring fuzzel"
+step "10 - Configuring fuzzel"
 mkdir -p ~/.config/fuzzel
 
 cat > ~/.config/fuzzel/fuzzel.ini << 'EOF'
@@ -434,7 +434,7 @@ info "~/.config/fuzzel/fuzzel.ini created"
 # =============================================================================
 # Step 11 - Configure kitty
 # =============================================================================
-step "12 - Configuring kitty"
+step "11 - Configuring kitty"
 mkdir -p ~/.config/kitty
 
 cat > ~/.config/kitty/kitty.conf << 'EOF'
@@ -462,7 +462,7 @@ info "~/.config/kitty/kitty.conf created"
 # Step 12 - Configure neovim (optional)
 # =============================================================================
 if $OPT_NEOVIM; then
-    step "10 (optional) - Configuring neovim (${NEOVIM_MODE})"
+    step "12 - Configuring neovim (${NEOVIM_MODE})"
     sudo dnf install -y neovim
     mkdir -p ~/.config/nvim
 
@@ -504,7 +504,7 @@ EOF
         info "LazyVim starter cloned to ~/.config/nvim"
     fi
 else
-    info "Skipping step 13 (neovim not requested)"
+    info "Skipping step 12 (neovim not requested)"
 fi
 
 # =============================================================================
@@ -772,9 +772,9 @@ EOF
 info "~/.config/niri/config.kdl created"
 
 # =============================================================================
-# Step 16 - Install and configure Numix icons + themes
+# Step 15 - Install and configure Numix icons + themes
 # =============================================================================
-step "16 - Installing Numix icons and configuring themes"
+step "15 - Installing Numix icons and configuring themes"
 
 _NUMIX_TMP="$(mktemp -d)"
 cd "$_NUMIX_TMP"
@@ -816,7 +816,7 @@ info "Legacy application theme set to adw-gtk3-dark"
 # Step 16 - Install openfortivpn (optional)
 # =============================================================================
 if $OPT_VPN; then
-    step "17 - Installing openfortivpn"
+    step "16 - Installing openfortivpn"
     sudo dnf install -y openfortivpn
     sudo mkdir -p /etc/openfortivpn
 
@@ -850,7 +850,7 @@ fi
 # Step 17 - Install Visual Studio Code (optional)
 # =============================================================================
 if $OPT_VSCODE; then
-    step "18 - Installing Visual Studio Code"
+    step "17 - Installing Visual Studio Code"
     sudo rpm --import https://packages.microsoft.com/keys/microsoft.asc
     printf '[code]\nname=Visual Studio Code\nbaseurl=https://packages.microsoft.com/yumrepos/vscode\nenabled=1\nautorefresh=1\ntype=rpm-md\ngpgcheck=1\ngpgkey=https://packages.microsoft.com/keys/microsoft.asc\n' \
         | sudo tee /etc/yum.repos.d/vscode.repo > /dev/null
@@ -858,14 +858,14 @@ if $OPT_VSCODE; then
     sudo dnf install -y code
     info "Visual Studio Code installed"
 else
-    info "Skipping step 18 (VS Code not requested)"
+    info "Skipping step 17 (VS Code not requested)"
 fi
 
 # =============================================================================
-# Step 19 - Install Docker (optional)
+# Step 18 - Install Docker (optional)
 # =============================================================================
 if $OPT_DOCKER; then
-    step "19 - Installing Docker"
+    step "18 - Installing Docker"
     sudo dnf config-manager addrepo \
         --from-repofile https://download.docker.com/linux/fedora/docker-ce.repo
     sudo dnf install -y \
@@ -876,13 +876,13 @@ if $OPT_DOCKER; then
         docker-compose-plugin
     info "Docker installed"
 else
-    info "Skipping step 19 (Docker not requested)"
+    info "Skipping step 18 (Docker not requested)"
 fi
 
 # =============================================================================
-# Step 20 - Install Homebrew + gcc
+# Step 19 - Install Homebrew + gcc
 # =============================================================================
-step "20 - Installing Homebrew"
+step "19 - Installing Homebrew"
 
 if command -v brew &>/dev/null; then
     warn "Homebrew already installed — skipping"
