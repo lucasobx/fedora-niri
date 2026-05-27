@@ -275,6 +275,7 @@ DNF_PKGS=(
     gnome-tweaks
     python3-pip
     fastfetch
+    fd-find
     zoxide
     fuzzel
     kitty
