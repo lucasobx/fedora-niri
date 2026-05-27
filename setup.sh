@@ -123,28 +123,40 @@ done
 echo -e "\n${BOLD}Display (eDP-1):${RESET}"
 
 echo "  Resolution:"
-echo "    1) 2560x1600"
-echo "    2) 1920x1080"
+echo "    1) 1920x1080"
+echo "    2) 2560x1440"
+echo "    3) 2560x1600"
+echo "    4) 3840x2160"
 while true; do
-    read -rp "  Select resolution [1/2]: " _res_choice
+    read -rp "  Select resolution [1/2/3/4]: " _res_choice
     case "$_res_choice" in
-        1) EDP_RES="2560x1600"; break ;;
-        2) EDP_RES="1920x1080"; break ;;
-        *) echo "    Please enter 1 or 2." ;;
+        1) EDP_RES="1920x1080"; break ;;
+        2) EDP_RES="2560x1440"; break ;;
+        3) EDP_RES="2560x1600"; break ;;
+        4) EDP_RES="3840x2160"; break ;;
+        *) echo "    Please enter 1, 2, 3 or 4." ;;
     esac
 done
 
 echo "  Refresh rate:"
 echo "    1) 60Hz"
-echo "    2) 144Hz"
-echo "    3) 240Hz"
+echo "    2) 75Hz"
+echo "    3) 90Hz"
+echo "    4) 120Hz"
+echo "    5) 144Hz"
+echo "    6) 165Hz"
+echo "    7) 240Hz"
 while true; do
-    read -rp "  Select refresh rate [1/2/3]: " _hz_choice
+    read -rp "  Select refresh rate [1/2/3/4/5/6/7]: " _hz_choice
     case "$_hz_choice" in
         1) EDP_HZ="60Hz";  break ;;
-        2) EDP_HZ="144Hz"; break ;;
-        3) EDP_HZ="240Hz"; break ;;
-        *) echo "    Please enter 1, 2 or 3." ;;
+        2) EDP_HZ="75Hz";  break ;;
+        3) EDP_HZ="90Hz";  break ;;
+        4) EDP_HZ="120Hz"; break ;;
+        5) EDP_HZ="144Hz"; break ;;
+        6) EDP_HZ="165Hz"; break ;;
+        7) EDP_HZ="240Hz"; break ;;
+        *) echo "    Please enter 1 through 7." ;;
     esac
 done
 
