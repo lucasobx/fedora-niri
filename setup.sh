@@ -55,7 +55,7 @@ divider
 # --- Optional DNF packages ---
 echo -e "\n${BOLD}DNF packages:${RESET}"
 OPT_QBITTORRENT=false; ask_yn "Install qBittorrent?"                                 && OPT_QBITTORRENT=true || true
-OPT_CALIBRE=false;     ask_yn "Install Calibre? (e-book manager and converter)"      && OPT_CALIBRE=true     || true
+OPT_CALIBRE=false;     ask_yn "Install Calibre? (e-book manager)"                    && OPT_CALIBRE=true     || true
 OPT_STEAM=false;       ask_yn "Install Steam?"                                       && OPT_STEAM=true       || true
 OPT_OBS=false;         ask_yn "Install OBS Studio?"                                  && OPT_OBS=true         || true
 OPT_LOVE=false;        ask_yn "Install love? (Lua game framework)"                   && OPT_LOVE=true        || true
@@ -67,11 +67,12 @@ OPT_AUDACITY=false;    ask_yn "Install Audacity?"                               
 OPT_KDENLIVE=false;    ask_yn "Install Kdenlive?"                                    && OPT_KDENLIVE=true    || true
 OPT_LUTRIS=false;      ask_yn "Install Lutris?"                                      && OPT_LUTRIS=true      || true
 OPT_GIMP=false;        ask_yn "Install GIMP?"                                        && OPT_GIMP=true        || true
+OPT_EMACS=false;       ask_yn "Install Emacs?"                                       && OPT_EMACS=true       || true
 
 # --- Optional Flatpaks ---
 echo -e "\n${BOLD}Flatpak packages:${RESET}"
-OPT_TELEGRAM=false;   ask_yn "Install Telegram? (messaging app)"                      && OPT_TELEGRAM=true   || true
-OPT_VLC=false;        ask_yn "Install VLC? (versatile media player)"                  && OPT_VLC=true        || true
+OPT_TELEGRAM=false;   ask_yn "Install Telegram?"                                      && OPT_TELEGRAM=true   || true
+OPT_VLC=false;        ask_yn "Install VLC?"                                           && OPT_VLC=true        || true
 OPT_HEROIC=false;     ask_yn "Install Heroic Games Launcher?"                         && OPT_HEROIC=true     || true
 OPT_LIBRE=false;      ask_yn "Install Libre Menu Editor?"                             && OPT_LIBRE=true      || true
 OPT_YAC=false;        ask_yn "Install YACReader? (comic and manga reader)"            && OPT_YAC=true        || true
@@ -184,7 +185,7 @@ echo -e "${BOLD}  Summary — the following will be installed/configured${RESET}
 divider
 echo -e "  Keyboard:      ${KBD_LABEL}"
 echo -e "  Display:       eDP-1 ${EDP_RES}@${EDP_HZ} scale ${EDP_SCALE}"
-echo -e "  DNF optional:  qbittorrent=${OPT_QBITTORRENT}  calibre=${OPT_CALIBRE}  steam=${OPT_STEAM}  obs=${OPT_OBS}  love=${OPT_LOVE}  distrobox=${OPT_DISTROBOX}  vscode=${OPT_VSCODE}  docker=${OPT_DOCKER}  retroarch=${OPT_RETROARCH}  audacity=${OPT_AUDACITY}  kdenlive=${OPT_KDENLIVE}  lutris=${OPT_LUTRIS}  gimp=${OPT_GIMP}"
+echo -e "  DNF optional:  qbittorrent=${OPT_QBITTORRENT}  calibre=${OPT_CALIBRE}  steam=${OPT_STEAM}  obs=${OPT_OBS}  love=${OPT_LOVE}  distrobox=${OPT_DISTROBOX}  vscode=${OPT_VSCODE}  docker=${OPT_DOCKER}  retroarch=${OPT_RETROARCH}  audacity=${OPT_AUDACITY}  kdenlive=${OPT_KDENLIVE}  lutris=${OPT_LUTRIS}  gimp=${OPT_GIMP} emacs=${OPT_EMACS}"
 echo -e "  Flatpak opt:   telegram=${OPT_TELEGRAM}  vlc=${OPT_VLC}  heroic=${OPT_HEROIC}  libremenu=${OPT_LIBRE}  yacreader=${OPT_YAC}  anki=${OPT_ANKI}  spotify=${OPT_SPOTIFY}  bottles=${OPT_BOTTLES}  protonplus=${OPT_PROTONPLUS}  flatseal=${OPT_FLATSEAL}  foliate=${OPT_FOLIATE}  bitwarden=${OPT_BITWARDEN}  discord=${OPT_DISCORD}  obsidian=${OPT_OBSIDIAN}  stremio=${OPT_STREMIO}  slack=${OPT_SLACK}"
 echo -e "  Neovim:        ${OPT_NEOVIM} $(if $OPT_NEOVIM; then echo "(${NEOVIM_MODE})"; fi)"
 echo -e "  asdf:          ${OPT_ASDF}"
@@ -286,6 +287,7 @@ $OPT_AUDACITY    && DNF_PKGS+=(audacity)
 $OPT_KDENLIVE    && DNF_PKGS+=(kdenlive)
 $OPT_LUTRIS      && DNF_PKGS+=(lutris)
 $OPT_GIMP        && DNF_PKGS+=(gimp)
+$OPT_EMACS       && DNF_PKGS+=(emacs) 
 
 sudo dnf install -y "${DNF_PKGS[@]}"
 

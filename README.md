@@ -13,7 +13,7 @@ The script installs and configures a complete Wayland desktop environment with s
 - Wayland/Qt/Electron environment tweaks
 - Blur and transparency enabled in `niri`
 - Preconfigured `niri` keybinds and desktop layout
-- Optional development tooling (`neovim`, `asdf`, Docker, VS Code)
+- Optional development tooling (`emacs`, `neovim`, `asdf`, Docker, VS Code)
 - Optional gaming/media/software packages via DNF and Flatpak
 - Optional Git identity setup
 - Display, keyboard layout, and scaling configuration during setup
