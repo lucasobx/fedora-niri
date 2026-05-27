@@ -13,7 +13,7 @@ The script installs and configures a complete Wayland desktop environment with s
 - Wayland/Qt/Electron environment tweaks
 - Blur and transparency enabled in `niri`
 - Preconfigured `niri` keybinds and desktop layout
-- Optional development tooling (`emacs`, `neovim`, `asdf`, Docker, VS Code)
+- Optional development tooling (`emacs`, `neovim`, `asdf`, `docker`, `vs code`)
 - Optional gaming/media/software packages via DNF and Flatpak
 - Optional Git identity setup
 - Display, keyboard layout, and scaling configuration during setup
@@ -220,7 +220,8 @@ After the process finishes:
 
 ## Optional Development Tools
 
-- Neovim
-  - Vanilla configuration
-  - LazyVim setup
+- Emacs (if you're willing to go down the rabbit hole)
+- Neovim (choose one configuration)
+  - Vanilla (basic setup without plugins)
+  - [LazyVim](https://www.lazyvim.org/)
 - asdf (installed through Homebrew)
