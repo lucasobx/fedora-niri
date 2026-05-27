@@ -170,51 +170,48 @@ After the process finishes:
 
 - `niri`
 - `noctalia-shell`
-- `kitty`
-- `fuzzel`
+- `numix icon themes`
 - `fastfetch`
+- `homebrew`
+- `fuzzel`
 - `zoxide`
+- `kitty`
 - `pipx`
-- `Numix icon themes`
 
 # Optional Applications
 
 ## DNF Packages
 
 - qBittorrent
-- Calibre
-- Steam
 - OBS Studio
-- LÖVE
-- Distrobox
-- Visual Studio Code
-- Docker
 - RetroArch
 - Audacity
 - Kdenlive
+- Calibre
 - Lutris
+- Steam
 - GIMP
 
 ---
 
 ## Flatpak Applications
 
-- Telegram
-- VLC
 - Heroic Games Launcher
 - Libre Menu Editor
+- ProtonPlus
+- Bitwarden
 - YACReader
-- Anki
+- Flatseal
+- Telegram
+- Obsidian
 - Spotify
 - Bottles
-- ProtonPlus
-- Flatseal
-- Foliate
-- Bitwarden
 - Discord
-- Obsidian
 - Stremio
+- Foliate
 - Slack
+- Anki
+- VLC
 
 ---
 
@@ -224,4 +221,8 @@ After the process finishes:
 - Neovim (choose one configuration)
   - Vanilla (basic setup without plugins)
   - [LazyVim](https://www.lazyvim.org/)
-- asdf (installed through Homebrew)
+- Visual Studio Code
+- LÖVE (2D game framework)
+- Distrobox
+- Docker
+- asdf
