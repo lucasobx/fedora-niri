@@ -176,3 +176,51 @@ After the process finishes:
 - `zoxide`
 - `pipx`
 - `Numix icon themes`
+
+# Optional Applications
+
+## DNF Packages
+
+- qBittorrent
+- Calibre
+- Steam
+- OBS Studio
+- LÖVE
+- Distrobox
+- Visual Studio Code
+- Docker
+- RetroArch
+- Audacity
+- Kdenlive
+- Lutris
+- GIMP
+
+---
+
+## Flatpak Applications
+
+- Telegram
+- VLC
+- Heroic Games Launcher
+- Libre Menu Editor
+- YACReader
+- Anki
+- Spotify
+- Bottles
+- ProtonPlus
+- Flatseal
+- Foliate
+- Bitwarden
+- Discord
+- Obsidian
+- Stremio
+- Slack
+
+---
+
+## Optional Development Tools
+
+- Neovim
+  - Vanilla configuration
+  - LazyVim setup
+- asdf (installed through Homebrew)
