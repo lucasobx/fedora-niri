@@ -18,6 +18,12 @@ The script installs and configures a complete Wayland desktop environment with s
 - Optional Git identity setup
 - Display, keyboard layout, and scaling configuration during setup
 
+> [!NOTE]
+> The setup intentionally removes most pre-installed GNOME applications to keep the system minimal.  
+> This includes apps such as GNOME Calendar, Maps, Weather, Logs, System Monitor, Calculator, Text Editor, and several other default utilities.
+>
+> `GNOME Software` is also removed after setup. Flatpak management can be done through `Bazaar`, which is installed by default.
+
 The installer is fully interactive and lets you choose optional packages before installation starts.
 
 ---
