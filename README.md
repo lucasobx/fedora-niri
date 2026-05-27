@@ -164,6 +164,28 @@ After the process finishes:
 
 ---
 
+## Default keyboard shortcuts
+
+All shortcuts use the **Super** (`Mod`) key (usually the Windows key).
+
+| Action | Shortcut |
+|--------|----------|
+| Terminal (kitty) | `Mod` + `Return` |
+| Browser (Firefox) | `Mod` + `B` |
+| Launcher (fuzzel) | `Mod` + `Space` |
+| Focus column left/right | `Mod` + `←` / `→` |
+| Focus window down/up | `Mod` + `↓` / `↑` |
+| Move column left/right | `Mod` + `Ctrl` + `←` / `→` |
+| Switch workspace | `Mod` + `1` … `9` |
+| Move column to workspace | `Mod` + `Ctrl` + `1` … `9` |
+| Maximize column | `Mod` + `F` |
+| Close window | `Mod` + `Q` |
+| Quit niri | `Mod` + `Shift` + `E` |
+
+A full list of bindings is available in `~/.config/niri/config.kdl`.
+
+---
+
 # Included defaults
 
 ## Core packages
