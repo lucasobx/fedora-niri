@@ -184,9 +184,18 @@ if $OPT_GIT; then
     read -rp "  Email for Git: "                     GIT_EMAIL
 fi
 
-# --- Development tools ---
-echo -e "\n${BOLD}Development tools:${RESET}"
-OPT_HOMEBREW=false; ask_yn "Install Homebrew? (Linux package manager)" && OPT_HOMEBREW=true || true
+# --- Shell ---
+echo -e "\n${BOLD}Shell:${RESET}"
+echo "    1) bash (keep as default)"
+echo "    2) fish"
+while true; do
+    read -rp "  Select shell [1/2]: " _shell_choice
+    case "$_shell_choice" in
+        1) SHELL_CHOICE="bash"; break ;;
+        2) SHELL_CHOICE="fish"; break ;;
+        *) echo "    Please enter 1 or 2." ;;
+    esac
+done
 
 # --- Remove LibreOffice? ---
 echo -e "\n${BOLD}LibreOffice removal:${RESET}"
@@ -199,9 +208,9 @@ divider
 echo -e "  Keyboard:      ${KBD_LABEL}"
 echo -e "  Display:       eDP-1 ${EDP_RES}@${EDP_HZ} scale ${EDP_SCALE}"
 echo -e "  DNF optional:  qbittorrent=${OPT_QBITTORRENT}  calibre=${OPT_CALIBRE}  steam=${OPT_STEAM}  obs=${OPT_OBS}  love=${OPT_LOVE}  distrobox=${OPT_DISTROBOX}  vscode=${OPT_VSCODE}  docker=${OPT_DOCKER}  retroarch=${OPT_RETROARCH}  audacity=${OPT_AUDACITY}  kdenlive=${OPT_KDENLIVE}  lutris=${OPT_LUTRIS}  gimp=${OPT_GIMP}  emacs=${OPT_EMACS}  zenbrowser=${OPT_ZENBROWSER}"
-echo -e "  Flatpak opt:   telegram=${OPT_TELEGRAM}  vlc=${OPT_VLC}  heroic=${OPT_HEROIC}  libremenu=${OPT_LIBRE}  yacreader=${OPT_YAC}  anki=${OPT_ANKI}  spotify=${OPT_SPOTIFY}  bottles=${OPT_BOTTLES}  protonplus=${OPT_PROTONPLUS}  flatseal=${OPT_FLATSEAL}  foliate=${OPT_FOLIATE}  bitwarden=${OPT_BITWARDEN}  discord=${OPT_DISCORD}  obsidian=${OPT_OBSIDIAN}  stremio=${OPT_STREMIO}  slack=${OPT_SLACK}  gearlever=${OPT_GEARLEVER}"
+echo -e "  Flatpak opt:   telegram=${OPT_TELEGRAM}  vlc=${OPT_VLC}  heroic=${OPT_HEROIC}  libremenu=${OPT_LIBRE}  yacreader=${OPT_YAC}  anki=${OPT_ANKI}  spotify=${OPT_SPOTIFY}  bottles=${OPT_BOTTLES}  protonplus=${OPT_PROTONPLUS}  flatseal=${OPT_FLATSEAL}  bitwarden=${OPT_BITWARDEN}  discord=${OPT_DISCORD}  obsidian=${OPT_OBSIDIAN}  stremio=${OPT_STREMIO}  slack=${OPT_SLACK}  gearlever=${OPT_GEARLEVER}"
 echo -e "  Neovim:        ${OPT_NEOVIM} $(if $OPT_NEOVIM; then echo "(${NEOVIM_MODE})"; fi)"
-echo -e "  Homebrew:      ${OPT_HOMEBREW}"
+echo -e "  Shell:         ${SHELL_CHOICE}"
 echo -e "  Git identity:  ${OPT_GIT} $(if $OPT_GIT; then echo "${GIT_NAME} <${GIT_EMAIL}>"; fi)"
 echo -e "  Remove LibreOffice: ${OPT_REMOVE_LIBREOFFICE}"
 echo ""
@@ -275,11 +284,13 @@ DNF_PKGS=(
     adw-gtk3-theme
     gnome-tweaks
     python3-pip
+    wf-recorder
     fastfetch
     fd-find
     zoxide
     fuzzel
     kitty
+    slurp
     unzip
     unrar
     7zip
@@ -299,6 +310,14 @@ $OPT_KDENLIVE    && DNF_PKGS+=(kdenlive)
 $OPT_LUTRIS      && DNF_PKGS+=(lutris)
 $OPT_GIMP        && DNF_PKGS+=(gimp)
 $OPT_EMACS       && DNF_PKGS+=(emacs)
+
+# Enable mise COPR and add to install list
+if ! dnf copr list --enabled 2>/dev/null | grep -q "jdxcode/mise"; then
+    sudo dnf copr enable -y jdxcode/mise
+else
+    warn "COPR jdxcode/mise already enabled"
+fi
+DNF_PKGS+=(mise)
 
 # Enable Zen Browser COPR and add to install list if requested
 if $OPT_ZENBROWSER; then
@@ -364,20 +383,51 @@ else
 fi
 
 # =============================================================================
-# Step 7 - Configure ~/.bashrc
+# Step 7 - Configure shell
 # =============================================================================
-step "7 - Configuring ~/.bashrc"
+if [[ "$SHELL_CHOICE" == "bash" ]]; then
+    step "7 - Configuring ~/.bashrc"
 
-if grep -q '_ZO_DOCTOR' ~/.bashrc; then
-    warn "Zoxide block already present in ~/.bashrc — skipping"
-else
-    cat >> ~/.bashrc << 'EOF'
+    if grep -q '_ZO_DOCTOR' ~/.bashrc; then
+        warn "Zoxide block already present in ~/.bashrc — skipping"
+    else
+        cat >> ~/.bashrc << 'EOF'
 
 # Zoxide
 export _ZO_DOCTOR=0
 eval "$(zoxide init bash --cmd cd)"
 EOF
-    info "Zoxide block added to ~/.bashrc"
+        info "Zoxide block added to ~/.bashrc"
+    fi
+
+    if grep -q 'mise activate bash' ~/.bashrc; then
+        warn "mise block already present in ~/.bashrc — skipping"
+    else
+        echo 'eval "$(~/.local/bin/mise activate bash)"' >> ~/.bashrc
+        info "mise activation added to ~/.bashrc"
+    fi
+else
+    step "7 - Installing and configuring fish shell"
+    sudo dnf install -y fish
+    command -v fish | sudo tee -a /etc/shells
+    chsh -s "$(command -v fish)"
+    mkdir -p ~/.config/fish
+    cat > ~/.config/fish/config.fish << 'EOF'
+# Wayland / Qt / GTK environment
+set -gx QT_WAYLAND_DISABLE_WINDOWDECORATION 1
+set -gx ELECTRON_OZONE_PLATFORM_HINT auto
+set -gx QT_QPA_PLATFORMTHEME gtk3
+set -gx QT_QPA_PLATFORM wayland
+fish_add_path $HOME/.local/bin $HOME/bin
+/usr/bin/mise activate fish | source
+if status is-interactive
+    if command -v zoxide > /dev/null
+        zoxide init fish --cmd cd | source
+    end
+    set -U fish_greeting ""
+end
+EOF
+    info "fish installed, set as default shell, and ~/.config/fish/config.fish written"
 fi
 
 # =============================================================================
@@ -404,13 +454,14 @@ sudo dnf install -y noctalia-shell
 # =============================================================================
 # Step 9 - Configure environment variables
 # =============================================================================
-step "9 - Configuring environment variables"
+if [[ "$SHELL_CHOICE" == "bash" ]]; then
+    step "9 - Configuring environment variables"
 
-# Write ~/.bash_profile block (idempotent check)
-if grep -q 'QT_QPA_PLATFORM' ~/.bash_profile 2>/dev/null; then
-    warn "Wayland block already present in ~/.bash_profile — skipping"
-else
-    cat >> ~/.bash_profile << 'EOF'
+    # Write ~/.bash_profile block (idempotent check)
+    if grep -q 'QT_QPA_PLATFORM' ~/.bash_profile 2>/dev/null; then
+        warn "Wayland block already present in ~/.bash_profile — skipping"
+    else
+        cat >> ~/.bash_profile << 'EOF'
 
 # Wayland / Qt / GTK environment
 export QT_WAYLAND_DISABLE_WINDOWDECORATION=1
@@ -418,7 +469,10 @@ export ELECTRON_OZONE_PLATFORM_HINT=auto
 export QT_QPA_PLATFORMTHEME=gtk3
 export QT_QPA_PLATFORM=wayland
 EOF
-    info "Environment block written to ~/.bash_profile"
+        info "Environment block written to ~/.bash_profile"
+    fi
+else
+    info "Skipping step 9 (fish selected — env vars already in ~/.config/fish/config.fish)"
 fi
 
 # =============================================================================
