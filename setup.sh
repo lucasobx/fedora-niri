@@ -913,9 +913,17 @@ EOF
 info "monique installed and desktop entry created at ~/.local/share/applications/monique.desktop"
 
 # =============================================================================
-# Step 20 - System update, cleanup, and reboot
+# Step 20 - Disable split-lock mitigation
 # =============================================================================
-step "20 - System update and cleanup"
+step "20 - Disabling split-lock mitigation"
+echo 'kernel.split_lock_mitigate=0' | sudo tee /etc/sysctl.d/99-splitlock.conf > /dev/null
+sudo sysctl -p /etc/sysctl.d/99-splitlock.conf
+info "Split-lock mitigation disabled (/etc/sysctl.d/99-splitlock.conf)"
+
+# =============================================================================
+# Step 21 - System update, cleanup, and reboot
+# =============================================================================
+step "21 - System update and cleanup"
 sudo dnf upgrade -y
 sudo dnf remove -y rygel
 sudo dnf clean all
