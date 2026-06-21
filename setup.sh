@@ -82,7 +82,6 @@ OPT_SPOTIFY=false;    ask_yn "Install Spotify?"                                 
 OPT_BOTTLES=false;    ask_yn "Install Bottles? (run Windows apps via Wine)"           && OPT_BOTTLES=true    || true
 OPT_PROTONPLUS=false; ask_yn "Install ProtonPlus?"                                    && OPT_PROTONPLUS=true || true
 OPT_FLATSEAL=false;   ask_yn "Install Flatseal? (flatpak permissions manager)"        && OPT_FLATSEAL=true   || true
-OPT_FOLIATE=false;    ask_yn "Install Foliate? (e-book reader)"                       && OPT_FOLIATE=true    || true
 OPT_BITWARDEN=false;  ask_yn "Install Bitwarden? (password manager)"                  && OPT_BITWARDEN=true  || true
 OPT_DISCORD=false;    ask_yn "Install Discord?"                                       && OPT_DISCORD=true    || true
 OPT_OBSIDIAN=false;   ask_yn "Install Obsidian?"                                      && OPT_OBSIDIAN=true   || true
@@ -338,7 +337,6 @@ $OPT_SPOTIFY    && FLATPAK_PKGS+=(com.spotify.Client)
 $OPT_BOTTLES    && FLATPAK_PKGS+=(com.usebottles.bottles)
 $OPT_PROTONPLUS && FLATPAK_PKGS+=(com.vysp3r.ProtonPlus)
 $OPT_FLATSEAL   && FLATPAK_PKGS+=(com.github.tchx84.Flatseal)
-$OPT_FOLIATE    && FLATPAK_PKGS+=(com.github.johnfactotum.Foliate)
 $OPT_DISTROBOX  && FLATPAK_PKGS+=(com.ranfdev.DistroShelf)
 $OPT_BITWARDEN  && FLATPAK_PKGS+=(com.bitwarden.desktop)
 $OPT_DISCORD    && FLATPAK_PKGS+=(com.discordapp.Discord)
@@ -866,39 +864,9 @@ else
 fi
 
 # =============================================================================
-# Step 18 - Install Homebrew + gcc (optional)
+# Step 18 - Install and configure Monique
 # =============================================================================
-if $OPT_HOMEBREW; then
-    step "18 - Installing Homebrew"
-
-    if command -v brew &>/dev/null; then
-        warn "Homebrew already installed — skipping"
-    else
-        NONINTERACTIVE=1 /bin/bash -c \
-            "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-
-        # Add Homebrew to PATH in ~/.bashrc (idempotent)
-        if grep -q 'linuxbrew' ~/.bashrc; then
-            warn "Homebrew block already present in ~/.bashrc — skipping"
-        else
-            echo "" >> ~/.bashrc
-            echo 'eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv bash)"' >> ~/.bashrc
-        fi
-
-        # Load brew into current shell session
-        eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv bash)"
-
-        brew install gcc
-        info "Homebrew and gcc installed"
-    fi
-else
-    info "Skipping step 18 (Homebrew not requested)"
-fi
-
-# =============================================================================
-# STEP 19: Install Monique
-# =============================================================================
-step "19 - Installing and configuring monique (Wayland monitor profile manager)"
+step "18 - Installing and configuring monique (Wayland monitor profile manager)"
 pipx install monique --system-site-packages
 
 mkdir -p ~/.local/share/applications
@@ -917,17 +885,17 @@ EOF
 info "monique installed and desktop entry created at ~/.local/share/applications/monique.desktop"
 
 # =============================================================================
-# Step 20 - Disable split-lock mitigation
+# Step 19 - Disable split-lock mitigation
 # =============================================================================
-step "20 - Disabling split-lock mitigation"
+step "19 - Disabling split-lock mitigation"
 echo 'kernel.split_lock_mitigate=0' | sudo tee /etc/sysctl.d/99-splitlock.conf > /dev/null
 sudo sysctl -p /etc/sysctl.d/99-splitlock.conf
 info "Split-lock mitigation disabled (/etc/sysctl.d/99-splitlock.conf)"
 
 # =============================================================================
-# Step 21 - System update, cleanup, and reboot
+# Step 20 - System update, cleanup, and reboot
 # =============================================================================
-step "21 - System update and cleanup"
+step "20 - System update and cleanup"
 sudo dnf upgrade -y
 sudo dnf remove -y rygel
 sudo dnf clean all
