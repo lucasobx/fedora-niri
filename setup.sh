@@ -44,6 +44,12 @@ ask_yn() {
 
 [[ "$EUID" -eq 0 ]] && die "Do not run this script as root. sudo will be called internally when needed."
 
+# Keep sudo session alive during script execution
+sudo -v
+while true; do sudo -v; sleep 60; done &
+_SUDO_PID=$!
+trap 'kill "$_SUDO_PID" 2>/dev/null' EXIT
+
 # =============================================================================
 # Collect all user choices upfront, before any installation begins
 # =============================================================================
