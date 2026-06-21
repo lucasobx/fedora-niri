@@ -183,9 +183,9 @@ if $OPT_GIT; then
     read -rp "  Email for Git: "                     GIT_EMAIL
 fi
 
-# --- asdf (installed via Homebrew) ---
+# --- Development tools ---
 echo -e "\n${BOLD}Development tools:${RESET}"
-OPT_ASDF=false; ask_yn "Install asdf? (multi-language version manager, via Homebrew)" && OPT_ASDF=true || true
+OPT_HOMEBREW=false; ask_yn "Install Homebrew? (Linux package manager)" && OPT_HOMEBREW=true || true
 
 # --- Remove LibreOffice? ---
 echo -e "\n${BOLD}LibreOffice removal:${RESET}"
@@ -284,9 +284,6 @@ DNF_PKGS=(
     7zip
     zip
 )
-
-# libyaml-devel and libffi-devel only if asdf will be installed
-$OPT_ASDF && DNF_PKGS+=(libyaml-devel libffi-devel)
 
 # Optional packages selected earlier
 $OPT_QBITTORRENT && DNF_PKGS+=(qbittorrent)
@@ -847,48 +844,42 @@ if $OPT_DOCKER; then
         containerd.io \
         docker-buildx-plugin \
         docker-compose-plugin
-    info "Docker installed"
+    sudo systemctl enable --now docker
+    sudo usermod -aG docker "$USER"
+    info "Docker installed, service enabled and started"
+    info "User '$USER' added to the docker group (takes effect after next login)"
 else
     info "Skipping step 17 (Docker not requested)"
 fi
 
 # =============================================================================
-# Step 18 - Install Homebrew + gcc
+# Step 18 - Install Homebrew + gcc (optional)
 # =============================================================================
-step "18 - Installing Homebrew"
+if $OPT_HOMEBREW; then
+    step "18 - Installing Homebrew"
 
-if command -v brew &>/dev/null; then
-    warn "Homebrew already installed — skipping"
-else
-    NONINTERACTIVE=1 /bin/bash -c \
-        "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-
-    # Add Homebrew to PATH in ~/.bashrc (idempotent)
-    if grep -q 'linuxbrew' ~/.bashrc; then
-        warn "Homebrew block already present in ~/.bashrc — skipping"
+    if command -v brew &>/dev/null; then
+        warn "Homebrew already installed — skipping"
     else
-        echo "" >> ~/.bashrc
-        echo 'eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv bash)"' >> ~/.bashrc
-    fi
+        NONINTERACTIVE=1 /bin/bash -c \
+            "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 
-    # Load brew into current shell session
-    eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv bash)"
-
-    brew install gcc
-    info "Homebrew and gcc installed"
-
-    # Install asdf if requested
-    if $OPT_ASDF; then
-        brew install asdf
-        # Add asdf shims to PATH in ~/.bashrc (idempotent)
-        if grep -q 'ASDF_DATA_DIR' ~/.bashrc; then
-            warn "asdf shims block already present in ~/.bashrc — skipping"
+        # Add Homebrew to PATH in ~/.bashrc (idempotent)
+        if grep -q 'linuxbrew' ~/.bashrc; then
+            warn "Homebrew block already present in ~/.bashrc — skipping"
         else
             echo "" >> ~/.bashrc
-            echo 'export PATH="${ASDF_DATA_DIR:-$HOME/.asdf}/shims:$PATH"' >> ~/.bashrc
+            echo 'eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv bash)"' >> ~/.bashrc
         fi
-        info "asdf installed and shims added to ~/.bashrc"
+
+        # Load brew into current shell session
+        eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv bash)"
+
+        brew install gcc
+        info "Homebrew and gcc installed"
     fi
+else
+    info "Skipping step 18 (Homebrew not requested)"
 fi
 
 # =============================================================================
@@ -941,13 +932,6 @@ if $OPT_GIT; then
     echo -e "  Git was configured for: ${GIT_NAME} <${GIT_EMAIL}>"
     echo -e "  To create an SSH key, run:"
     echo -e "    ${CYAN}ssh-keygen -t ed25519 -C \"${GIT_EMAIL}\"${RESET}"
-    echo ""
-fi
-if $OPT_DOCKER; then
-    echo -e "${BOLD}  Docker:${RESET}"
-    echo -e "  Docker was installed but not started. To enable and start it, run:"
-    echo -e "    ${CYAN}sudo systemctl enable --now docker${RESET}"
-    echo -e "  For more information: ${CYAN}https://docs.docker.com/engine/install/fedora${RESET}"
     echo ""
 fi
 ask_yn "Reboot now?" && sudo reboot || echo -e "\n  Reboot skipped. Remember to reboot before starting niri."
