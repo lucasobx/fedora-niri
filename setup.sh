@@ -341,6 +341,14 @@ step "Installing pipx"
 sudo dnf install -y pipx
 pipx ensurepath
 
+# Install Lua tooling if love was selected
+if $OPT_LOVE; then
+    sudo dnf install -y luajit luarocks
+    luarocks install --local luacheck
+    /usr/bin/mise use --global lua-language-server@latest
+    info "Lua tooling installed (luajit, luarocks, luacheck, lua-language-server)"
+fi
+
 # =============================================================================
 # Step 5 - Install Flatpaks
 # =============================================================================
@@ -412,6 +420,15 @@ EOF
         echo 'eval "$(~/.local/bin/mise activate bash)"' >> ~/.bashrc
         info "mise activation added to ~/.bashrc"
     fi
+
+    if $OPT_LOVE; then
+        if grep -q '.luarocks/bin' ~/.bashrc; then
+            warn "luarocks PATH already present in ~/.bashrc — skipping"
+        else
+            echo 'export PATH="$HOME/.luarocks/bin:$PATH"' >> ~/.bashrc
+            info "~/.luarocks/bin added to PATH in ~/.bashrc"
+        fi
+    fi
 else
     step "7 - Installing and configuring fish shell"
     sudo dnf install -y fish
@@ -434,6 +451,11 @@ if status is-interactive
 end
 EOF
     info "fish installed, set as default shell, and ~/.config/fish/config.fish written"
+
+    if $OPT_LOVE; then
+        echo 'fish_add_path ~/.luarocks/bin' >> ~/.config/fish/config.fish
+        info "~/.luarocks/bin added to PATH in ~/.config/fish/config.fish"
+    fi
 fi
 
 # =============================================================================
