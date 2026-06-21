@@ -13,18 +13,18 @@ The script installs and configures a complete Wayland desktop environment with s
 - Wayland/Qt/Electron environment tweaks
 - Blur and transparency enabled in `niri`
 - Preconfigured `niri` keybinds and desktop layout
-- Optional development tooling (`emacs`, `neovim`, `asdf`, `docker`, `vs code`)
 - Optional gaming/media/software packages via DNF and Flatpak
+- Optional development tooling
 - Optional Git identity setup
-- Display, keyboard layout, and scaling configuration during setup
 
 > [!NOTE]
-> The setup intentionally removes most pre-installed GNOME applications to keep the system minimal.  
-> This includes apps such as GNOME Calendar, Maps, Weather, Logs, System Monitor, Calculator, Text Editor, and several other default utilities.
->
-> `GNOME Software` is also removed after setup. Flatpak management can be done through `Bazaar`, which is installed by default.
+> The setup intentionally removes most pre-installed GNOME applications to keep the system minimal. `GNOME Software` is also removed after setup. Flatpak management can be done through `Bazaar`, which is installed by default.
 
-The installer is fully interactive and lets you choose optional packages before installation starts.
+> - Interactive installer with optional package selection.
+> - The script must be run as a regular user (not root)
+> - `sudo` is used internally when required
+> - The installer stops immediately on errors
+> - The default configuration is optimized for Wayland usage
 
 ---
 
@@ -155,15 +155,6 @@ After the process finishes:
 
 ---
 
-# Notes
-
-- The script must be run as a regular user (not root)
-- `sudo` is used internally when required
-- The installer stops immediately on errors
-- The default configuration is optimized for Wayland usage
-
----
-
 ## Default keyboard shortcuts
 
 All shortcuts use the **Super** (`Mod`) key (usually the Windows key).
@@ -194,7 +185,6 @@ A full list of bindings is available in `~/.config/niri/config.kdl`.
 - `noctalia-shell`
 - `numix icon themes`
 - `fastfetch`
-- `homebrew`
 - `fuzzel`
 - `zoxide`
 - `kitty`
@@ -204,14 +194,15 @@ A full list of bindings is available in `~/.config/niri/config.kdl`.
 
 ## DNF Packages
 
+- Zen Browser
 - qBittorrent
 - OBS Studio
 - RetroArch
 - Audacity
 - Kdenlive
 - Calibre
-- Lutris
 - Steam
+- Lutris
 - GIMP
 
 ---
@@ -220,16 +211,17 @@ A full list of bindings is available in `~/.config/niri/config.kdl`.
 
 - Heroic Games Launcher
 - Libre Menu Editor
+- Gear Lever
+- YACReader
 - ProtonPlus
 - Bitwarden
-- YACReader
-- Flatseal
 - Telegram
 - Obsidian
+- Stremio
+- Discord
+- Flatseal
 - Spotify
 - Bottles
-- Discord
-- Stremio
 - Foliate
 - Slack
 - Anki
@@ -246,5 +238,5 @@ A full list of bindings is available in `~/.config/niri/config.kdl`.
 - Visual Studio Code
 - LÖVE (2D game framework)
 - Distrobox
+- Homebrew
 - Docker
-- asdf
