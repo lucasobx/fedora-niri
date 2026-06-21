@@ -91,6 +91,16 @@ After installation finishes:
 
 ---
 
+# Shell
+
+During setup you can choose between **bash** (default) and **fish**.
+
+**bash** - keeps the existing shell. Zoxide is initialized in `~/.bashrc` and environment variables are written to `~/.bash_profile`.
+
+**fish** - installs fish, sets it as the default shell via `chsh`, and writes `~/.config/fish/config.fish` with environment variables, PATH configuration, `mise` activation, and zoxide integration.
+
+---
+
 # Required post-install configuration
 
 After logging into `niri`, some `noctalia-shell` settings must be enabled manually.
@@ -184,6 +194,8 @@ A full list of bindings is available in `~/.config/niri/config.kdl`.
 - `niri`
 - `noctalia-shell`
 - `numix icon themes`
+- `wf-recorder` + `slurp`
+- `mise` (version manager for languages, env vars, and tasks per project)
 - `fastfetch`
 - `fuzzel`
 - `zoxide`
@@ -222,7 +234,6 @@ A full list of bindings is available in `~/.config/niri/config.kdl`.
 - Flatseal
 - Spotify
 - Bottles
-- Foliate
 - Slack
 - Anki
 - VLC
@@ -238,5 +249,5 @@ A full list of bindings is available in `~/.config/niri/config.kdl`.
 - Visual Studio Code
 - LÖVE (2D game framework)
 - Distrobox
-- Homebrew
 - Docker
+
