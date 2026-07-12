@@ -4,27 +4,22 @@ Automated setup script for a clean and minimal Fedora 44 workstation using [`nir
 
 The script installs and configures a complete Wayland desktop environment with sensible defaults, including:
 
-- `niri` dynamic scrollable tiling compositor
-- `noctalia-shell`
-- `kitty` terminal
-- `fuzzel` application launcher
+- Niri
+- Noctalia-shell
+- Kitty terminal
 - Numix icon themes
-- Dark GTK theme enabled
+- Fuzzel app launcher
 - Wayland/Qt/Electron environment tweaks
-- Blur and transparency enabled in `niri`
-- Preconfigured `niri` keybinds and desktop layout
-- Optional gaming/media/software packages via DNF and Flatpak
-- Optional development tooling
-- Optional Git identity setup
+- Preconfigured keybinds and desktop layout
+- Optional gaming/media/software packages
+- Optional development tools
+- Optional git identity setup
 
 > [!NOTE]
-> The setup intentionally removes most pre-installed GNOME applications to keep the system minimal. `GNOME Software` is also removed after setup. Flatpak management can be done through `Bazaar`, which is installed by default.
-
-> - Interactive installer with optional package selection.
-> - The script must be run as a regular user (not root)
-> - `sudo` is used internally when required
-> - The installer stops immediately on errors
-> - The default configuration is optimized for Wayland usage
+> The script intentionally removes most pre-installed GNOME applications to keep the system minimal. `GNOME Software` is also removed after setup. Flatpak management can be done through `Bazaar`, which is installed by default.
+> - The script must be run as a regular user (not root). `sudo` is used internally when required.
+> - The installer stops immediately on errors.
+> - The default configuration is optimized for Wayland.
 
 ---
 
@@ -172,7 +167,7 @@ All shortcuts use the **Super** (`Mod`) key (usually the Windows key).
 | Action | Shortcut |
 |--------|----------|
 | Terminal (kitty) | `Mod` + `Return` |
-| Browser (Firefox) | `Mod` + `B` |
+| Browser | `Mod` + `B` |
 | Launcher (fuzzel) | `Mod` + `Space` |
 | Focus column left/right | `Mod` + `←` / `→` |
 | Focus window down/up | `Mod` + `↓` / `↑` |
@@ -191,13 +186,14 @@ A full list of bindings is available in `~/.config/niri/config.kdl`.
 
 ## Core packages
 
-- `niri`
-- `noctalia-shell`
-- `numix icon themes`
+- `Niri`
+- `Noctalia-shell`
+- `Numix Icon Themes`
 - `wf-recorder` + `slurp`
 - `mise` (version manager for languages, env vars, and tasks per project)
-- `fastfetch`
-- `fuzzel`
+- `Zen Browser`
+- `Fastfetch`
+- `Fuzzel`
 - `zoxide`
 - `kitty`
 - `pipx`
@@ -206,16 +202,10 @@ A full list of bindings is available in `~/.config/niri/config.kdl`.
 
 ## DNF Packages
 
-- Zen Browser
 - qBittorrent
 - OBS Studio
-- RetroArch
-- Audacity
-- Kdenlive
 - Calibre
 - Steam
-- Lutris
-- GIMP
 
 ---
 
@@ -226,15 +216,9 @@ A full list of bindings is available in `~/.config/niri/config.kdl`.
 - Gear Lever
 - YACReader
 - ProtonPlus
-- Bitwarden
 - Telegram
-- Obsidian
-- Stremio
-- Discord
-- Flatseal
 - Spotify
 - Bottles
-- Slack
 - Anki
 - VLC
 
@@ -242,12 +226,7 @@ A full list of bindings is available in `~/.config/niri/config.kdl`.
 
 ## Optional Development Tools
 
-- Emacs (if you're willing to go down the rabbit hole)
-- Neovim (choose one configuration)
-  - Vanilla (basic setup without plugins)
-  - [LazyVim](https://www.lazyvim.org/)
-- Visual Studio Code
+- Neovim (basic setup without plugins)
 - LÖVE (2D game framework)
 - Distrobox
 - Docker
-
