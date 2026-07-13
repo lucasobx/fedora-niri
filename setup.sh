@@ -267,7 +267,6 @@ DNF_PKGS=(
   fastfetch
   fd-find
   zoxide
-  fuzzel
   kitty
   slurp
   unzip
@@ -434,7 +433,7 @@ fi
 
 sudo dnf update -y
 sudo dnf install -y niri --setopt=install_weak_deps=False
-sudo dnf install -y noctalia-shell
+sudo dnf install -y noctalia-git
 
 # =============================================================================
 # Step 9 - Configure environment variables
@@ -459,34 +458,6 @@ EOF
 else
   info "Skipping step 9 (fish selected — env vars already in ~/.config/fish/config.fish)"
 fi
-
-# =============================================================================
-# Step 10 - Configure fuzzel
-# =============================================================================
-step "10 - Configuring fuzzel"
-mkdir -p ~/.config/fuzzel
-
-cat > ~/.config/fuzzel/fuzzel.ini << 'EOF'
-[main]
-icon-theme=Numix-Circle
-line-height=27
-lines=7
-
-[border]
-radius=10
-width=2
-
-[colors]
-background=1a1a1aff
-text=d1d1d1ff
-match=ffffffff
-selection=333333ff
-selection-text=ffffffff
-selection-match=ffffffff
-border=4d4d4dff
-EOF
-
-info "~/.config/fuzzel/fuzzel.ini created"
 
 # =============================================================================
 # Step 11 - Configure kitty
@@ -642,7 +613,7 @@ layout {
   struts {}
 }
 
-spawn-at-startup "qs" "-c" "noctalia-shell"
+spawn-at-startup "noctalia"
 
 prefer-no-csd
 
@@ -682,9 +653,9 @@ window-rule {
 binds {
   Mod+Shift+Slash { show-hotkey-overlay; }
 
+  Mod+Space { spawn-sh "noctalia msg panel-toggle launcher"; }
   Mod+B { spawn "zen-browser"; }
   Mod+Return { spawn "kitty"; }
-  Mod+Space { spawn "fuzzel"; }
   Mod+N { spawn "nautilus"; }
 
   XF86AudioRaiseVolume allow-when-locked=true { spawn-sh "wpctl set-volume @DEFAULT_AUDIO_SINK@ 0.1+ -l 1.0"; }
