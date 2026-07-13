@@ -8,7 +8,6 @@ The script installs and configures a complete Wayland desktop environment with s
 - Noctalia-shell
 - Kitty terminal
 - Numix icon themes
-- Fuzzel app launcher
 - Wayland/Qt/Electron environment tweaks
 - Preconfigured keybinds and desktop layout
 - Optional gaming/media/software packages
@@ -168,7 +167,7 @@ All shortcuts use the **Super** (`Mod`) key (usually the Windows key).
 |--------|----------|
 | Terminal (kitty) | `Mod` + `Return` |
 | Browser | `Mod` + `B` |
-| Launcher (fuzzel) | `Mod` + `Space` |
+| Launcher | `Mod` + `Space` |
 | Focus column left/right | `Mod` + `←` / `→` |
 | Focus window down/up | `Mod` + `↓` / `↑` |
 | Move column left/right | `Mod` + `Ctrl` + `←` / `→` |
@@ -193,7 +192,6 @@ A full list of bindings is available in `~/.config/niri/config.kdl`.
 - `mise` (version manager for languages, env vars, and tasks per project)
 - `Zen Browser`
 - `Fastfetch`
-- `Fuzzel`
 - `zoxide`
 - `kitty`
 - `pipx`
@@ -227,6 +225,5 @@ A full list of bindings is available in `~/.config/niri/config.kdl`.
 ## Optional Development Tools
 
 - Neovim (basic setup without plugins)
-- LÖVE (2D game framework)
 - Distrobox
 - Docker
