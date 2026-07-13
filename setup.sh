@@ -62,7 +62,6 @@ OPT_DISTROBOX=false;   ask_yn "Install Distrobox?"                      && OPT_D
 OPT_CALIBRE=false;     ask_yn "Install Calibre?"                        && OPT_CALIBRE=true     || true
 OPT_DOCKER=false;      ask_yn "Install Docker?"                         && OPT_DOCKER=true      || true
 OPT_STEAM=false;       ask_yn "Install Steam?"                          && OPT_STEAM=true       || true
-OPT_LOVE=false;        ask_yn "Install LÖVE?"                           && OPT_LOVE=true        || true
 
 # --- Optional Flatpaks ---
 echo -e "\n${BOLD}Flatpak packages:${RESET}"
@@ -186,7 +185,7 @@ echo -e "${BOLD}  Summary — the following will be installed/configured${RESET}
 divider
 echo -e "  Keyboard:      ${KBD_LABEL}"
 echo -e "  Display:       eDP-1 ${EDP_RES}@${EDP_HZ} scale ${EDP_SCALE}"
-echo -e "  DNF optional:  qbittorrent=${OPT_QBITTORRENT}  calibre=${OPT_CALIBRE}  steam=${OPT_STEAM}  obs=${OPT_OBS}  love=${OPT_LOVE}  distrobox=${OPT_DISTROBOX}  docker=${OPT_DOCKER}"
+echo -e "  DNF optional:  qbittorrent=${OPT_QBITTORRENT}  calibre=${OPT_CALIBRE}  steam=${OPT_STEAM}  obs=${OPT_OBS}  distrobox=${OPT_DISTROBOX}  docker=${OPT_DOCKER}"
 echo -e "  Flatpak opt:   telegram=${OPT_TELEGRAM}  vlc=${OPT_VLC}  heroic=${OPT_HEROIC}  libremenu=${OPT_LIBRE}  yacreader=${OPT_YAC}  anki=${OPT_ANKI}  spotify=${OPT_SPOTIFY}  bottles=${OPT_BOTTLES}  protonplus=${OPT_PROTONPLUS}  gearlever=${OPT_GEARLEVER}"
 echo -e "  Neovim:        ${OPT_NEOVIM}"
 echo -e "  Shell:         ${SHELL_CHOICE}"
@@ -280,7 +279,6 @@ $OPT_OBS         && DNF_PKGS+=(obs-studio)
 $OPT_DISTROBOX   && DNF_PKGS+=(distrobox)
 $OPT_CALIBRE     && DNF_PKGS+=(calibre)
 $OPT_STEAM       && DNF_PKGS+=(steam)
-$OPT_LOVE        && DNF_PKGS+=(love)
 
 # Enable mise COPR and add to install list
 if ! dnf copr list --enabled 2>/dev/null | grep -q "jdxcode/mise"; then
@@ -303,13 +301,6 @@ sudo dnf install -y "${DNF_PKGS[@]}"
 step "Installing pipx"
 sudo dnf install -y pipx
 pipx ensurepath
-
-if $OPT_LOVE; then
-  sudo dnf install -y luajit luarocks
-  luarocks install --local luacheck
-  /usr/bin/mise use --global lua-language-server@latest
-  info "Lua tooling installed (luajit, luarocks, luacheck, lua-language-server)"
-fi
 
 # =============================================================================
 # Step 5 - Install Flatpaks
@@ -376,15 +367,6 @@ EOF
     echo 'eval "$(~/.local/bin/mise activate bash)"' >> ~/.bashrc
     info "mise activation added to ~/.bashrc"
   fi
-
-  if $OPT_LOVE; then
-    if grep -q '.luarocks/bin' ~/.bashrc; then
-      warn "luarocks PATH already present in ~/.bashrc — skipping"
-    else
-      echo 'export PATH="$HOME/.luarocks/bin:$PATH"' >> ~/.bashrc
-      info "~/.luarocks/bin added to PATH in ~/.bashrc"
-    fi
-  fi
 else
   step "7 - Installing and configuring fish shell"
   sudo dnf install -y fish
@@ -407,11 +389,6 @@ if status is-interactive
 end
 EOF
   info "fish installed, set as default shell, and ~/.config/fish/config.fish written"
-
-  if $OPT_LOVE; then
-    echo 'fish_add_path ~/.luarocks/bin' >> ~/.config/fish/config.fish
-    info "~/.luarocks/bin added to PATH in ~/.config/fish/config.fish"
-  fi
 fi
 
 # =============================================================================
