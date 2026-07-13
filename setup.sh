@@ -56,29 +56,24 @@ divider
 
 # --- Optional DNF packages ---
 echo -e "\n${BOLD}DNF packages:${RESET}"
-OPT_QBITTORRENT=false; ask_yn "Install qBittorrent?"                    && OPT_QBITTORRENT=true || true
-OPT_OBS=false;         ask_yn "Install OBS Studio?"                     && OPT_OBS=true         || true
-OPT_DISTROBOX=false;   ask_yn "Install Distrobox?"                      && OPT_DISTROBOX=true   || true
-OPT_CALIBRE=false;     ask_yn "Install Calibre?"                        && OPT_CALIBRE=true     || true
-OPT_DOCKER=false;      ask_yn "Install Docker?"                         && OPT_DOCKER=true      || true
-OPT_STEAM=false;       ask_yn "Install Steam?"                          && OPT_STEAM=true       || true
+OPT_QBITTORRENT=false; ask_yn "Install qBittorrent?" && OPT_QBITTORRENT=true || true
+OPT_OBS=false;         ask_yn "Install OBS Studio?"  && OPT_OBS=true         || true
+OPT_DISTROBOX=false;   ask_yn "Install Distrobox?"   && OPT_DISTROBOX=true   || true
+OPT_DOCKER=false;      ask_yn "Install Docker?"      && OPT_DOCKER=true      || true
+OPT_NEOVIM=false;      ask_yn "Install Neovim?"      && OPT_NEOVIM=true      || true
+OPT_EMACS=false;       ask_yn "Install Emacs?"       && OPT_EMACS=true       || true
+OPT_STEAM=false;       ask_yn "Install Steam?"       && OPT_STEAM=true       || true
 
 # --- Optional Flatpaks ---
 echo -e "\n${BOLD}Flatpak packages:${RESET}"
-OPT_BOTTLES=false;    ask_yn "Install Bottles? (Windows apps via Wine)" && OPT_BOTTLES=true    || true
-OPT_GEARLEVER=false;  ask_yn "Install Gear Lever? (AppImage manager)"   && OPT_GEARLEVER=true  || true
-OPT_YAC=false;        ask_yn "Install YACReader? (comic reader)"        && OPT_YAC=true        || true
-OPT_HEROIC=false;     ask_yn "Install Heroic Games Launcher?"           && OPT_HEROIC=true     || true
-OPT_LIBRE=false;      ask_yn "Install Libre Menu Editor?"               && OPT_LIBRE=true      || true
-OPT_PROTONPLUS=false; ask_yn "Install ProtonPlus?"                      && OPT_PROTONPLUS=true || true
-OPT_TELEGRAM=false;   ask_yn "Install Telegram?"                        && OPT_TELEGRAM=true   || true
-OPT_SPOTIFY=false;    ask_yn "Install Spotify?"                         && OPT_SPOTIFY=true    || true
-OPT_ANKI=false;       ask_yn "Install Anki?"                            && OPT_ANKI=true       || true
-OPT_VLC=false;        ask_yn "Install VLC?"                             && OPT_VLC=true        || true
-
-# --- Neovim ---
-echo -e "\n${BOLD}Neovim:${RESET}"
-OPT_NEOVIM=false; ask_yn "Install neovim?" && OPT_NEOVIM=true || true
+OPT_BOTTLES=false;    ask_yn "Install Bottles? (Install Windows apps via Wine)" && OPT_BOTTLES=true    || true
+OPT_LIBRE=false;      ask_yn "Install Libre Menu Editor? (Edit .desktop files)" && OPT_LIBRE=true      || true
+OPT_GEARLEVER=false;  ask_yn "Install Gear Lever? (AppImage manager)"           && OPT_GEARLEVER=true  || true
+OPT_HEROIC=false;     ask_yn "Install Heroic Games Launcher?"                   && OPT_HEROIC=true     || true
+OPT_PROTONPLUS=false; ask_yn "Install ProtonPlus?"                              && OPT_PROTONPLUS=true || true
+OPT_TELEGRAM=false;   ask_yn "Install Telegram?"                                && OPT_TELEGRAM=true   || true
+OPT_SPOTIFY=false;    ask_yn "Install Spotify?"                                 && OPT_SPOTIFY=true    || true
+OPT_VLC=false;        ask_yn "Install VLC?"                                     && OPT_VLC=true        || true
 
 # --- Keyboard layout ---
 echo -e "\n${BOLD}Keyboard layout:${RESET}"
@@ -185,8 +180,8 @@ echo -e "${BOLD}  Summary — the following will be installed/configured${RESET}
 divider
 echo -e "  Keyboard:      ${KBD_LABEL}"
 echo -e "  Display:       eDP-1 ${EDP_RES}@${EDP_HZ} scale ${EDP_SCALE}"
-echo -e "  DNF optional:  qbittorrent=${OPT_QBITTORRENT}  calibre=${OPT_CALIBRE}  steam=${OPT_STEAM}  obs=${OPT_OBS}  distrobox=${OPT_DISTROBOX}  docker=${OPT_DOCKER}"
-echo -e "  Flatpak opt:   telegram=${OPT_TELEGRAM}  vlc=${OPT_VLC}  heroic=${OPT_HEROIC}  libremenu=${OPT_LIBRE}  yacreader=${OPT_YAC}  anki=${OPT_ANKI}  spotify=${OPT_SPOTIFY}  bottles=${OPT_BOTTLES}  protonplus=${OPT_PROTONPLUS}  gearlever=${OPT_GEARLEVER}"
+echo -e "  DNF optional:  qbittorrent=${OPT_QBITTORRENT}  steam=${OPT_STEAM}  obs=${OPT_OBS}  distrobox=${OPT_DISTROBOX}  docker=${OPT_DOCKER}  emacs=${OPT_EMACS}"
+echo -e "  Flatpak opt:   telegram=${OPT_TELEGRAM}  vlc=${OPT_VLC}  heroic=${OPT_HEROIC}  libremenu=${OPT_LIBRE}  spotify=${OPT_SPOTIFY}  bottles=${OPT_BOTTLES}  protonplus=${OPT_PROTONPLUS}  gearlever=${OPT_GEARLEVER}"
 echo -e "  Neovim:        ${OPT_NEOVIM}"
 echo -e "  Shell:         ${SHELL_CHOICE}"
 echo -e "  Git identity:  ${OPT_GIT} $(if $OPT_GIT; then echo "${GIT_NAME} <${GIT_EMAIL}>"; fi)"
@@ -277,8 +272,8 @@ DNF_PKGS=(
 $OPT_QBITTORRENT && DNF_PKGS+=(qbittorrent)
 $OPT_OBS         && DNF_PKGS+=(obs-studio)
 $OPT_DISTROBOX   && DNF_PKGS+=(distrobox)
-$OPT_CALIBRE     && DNF_PKGS+=(calibre)
 $OPT_STEAM       && DNF_PKGS+=(steam)
+$OPT_EMACS       && DNF_PKGS+=(emacs)
 
 # Enable mise COPR and add to install list
 if ! dnf copr list --enabled 2>/dev/null | grep -q "jdxcode/mise"; then
@@ -317,8 +312,6 @@ $OPT_TELEGRAM   && FLATPAK_PKGS+=(org.telegram.desktop)
 $OPT_VLC        && FLATPAK_PKGS+=(org.videolan.VLC)
 $OPT_HEROIC     && FLATPAK_PKGS+=(com.heroicgameslauncher.hgl)
 $OPT_LIBRE      && FLATPAK_PKGS+=(page.codeberg.libre_menu_editor.LibreMenuEditor)
-$OPT_YAC        && FLATPAK_PKGS+=(com.yacreader.YACReader)
-$OPT_ANKI       && FLATPAK_PKGS+=(net.ankiweb.Anki)
 $OPT_SPOTIFY    && FLATPAK_PKGS+=(com.spotify.Client)
 $OPT_BOTTLES    && FLATPAK_PKGS+=(com.usebottles.bottles)
 $OPT_PROTONPLUS && FLATPAK_PKGS+=(com.vysp3r.ProtonPlus)
