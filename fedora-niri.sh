@@ -849,6 +849,13 @@ info "Color scheme set to prefer-dark"
 gsettings set org.gnome.desktop.interface gtk-theme "adw-gtk3-dark"
 info "Legacy application theme set to adw-gtk3-dark"
 
+gsettings set org.gnome.nautilus.preferences default-sort-order 'type'
+info "Nautilus default sort order set to Type"
+
+gsettings set org.gnome.desktop.privacy remember-recent-files false
+rm -f ~/.local/share/recently-used.xbel
+info "GNOME File History disabled and cleared"
+
 # =============================================================================
 # Step 17 - Install Docker (optional)
 # =============================================================================
