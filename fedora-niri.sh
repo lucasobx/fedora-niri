@@ -3,7 +3,7 @@
 # Fedora 44 + Niri + Noctalia-shell
 # =============================================================================
 # usage:
-# chmod +x setup.sh && ./setup.sh
+# chmod +x fedora-niri.sh && ./fedora-niri.sh
 # =============================================================================
 
 set -euo pipefail
@@ -54,7 +54,7 @@ divider
 echo -e "${BOLD} Optional packages - make your choices before we begin${RESET}"
 divider
 
-# --- Optional DNF packages ---
+# --- Optional Packages ---
 echo -e "\n${BOLD}DNF packages:${RESET}"
 OPT_QBITTORRENT=false; ask_yn "Install qBittorrent?" && OPT_QBITTORRENT=true || true
 OPT_OBS=false;         ask_yn "Install OBS Studio?"  && OPT_OBS=true         || true
@@ -67,13 +67,25 @@ OPT_STEAM=false;       ask_yn "Install Steam?"       && OPT_STEAM=true       || 
 # --- Optional Flatpaks ---
 echo -e "\n${BOLD}Flatpak packages:${RESET}"
 OPT_BOTTLES=false;    ask_yn "Install Bottles? (Install Windows apps via Wine)" && OPT_BOTTLES=true    || true
-OPT_LIBRE=false;      ask_yn "Install Libre Menu Editor? (Edit .desktop files)" && OPT_LIBRE=true      || true
 OPT_GEARLEVER=false;  ask_yn "Install Gear Lever? (AppImage manager)"           && OPT_GEARLEVER=true  || true
 OPT_HEROIC=false;     ask_yn "Install Heroic Games Launcher?"                   && OPT_HEROIC=true     || true
 OPT_PROTONPLUS=false; ask_yn "Install ProtonPlus?"                              && OPT_PROTONPLUS=true || true
 OPT_TELEGRAM=false;   ask_yn "Install Telegram?"                                && OPT_TELEGRAM=true   || true
 OPT_SPOTIFY=false;    ask_yn "Install Spotify?"                                 && OPT_SPOTIFY=true    || true
-OPT_VLC=false;        ask_yn "Install VLC?"                                     && OPT_VLC=true        || true
+
+# --- Video player ---
+echo -e "\n${BOLD}Video player:${RESET}"
+echo "    1) VLC"
+echo "    2) GNOME Videos"
+OPT_VLC=false; OPT_TOTEM=false
+while true; do
+  read -rp "  Select video player [1/2]: " _vid_choice
+  case "$_vid_choice" in
+    1) OPT_VLC=true;   break ;;
+    2) OPT_TOTEM=true; break ;;
+    *) echo "    Please enter 1 or 2." ;;
+  esac
+done
 
 # --- Keyboard layout ---
 echo -e "\n${BOLD}Keyboard layout:${RESET}"
@@ -87,6 +99,10 @@ while true; do
     *) echo "    Please enter 1 or 2." ;;
   esac
 done
+
+# --- Logitech K380 ---
+echo -e "\n${BOLD}Logitech K380:${RESET}"
+OPT_K380=false; ask_yn "Do you own a Logitech K380 keyboard? (enable standard F keys)" && OPT_K380=true || true
 
 # --- Display profile ---
 echo -e "\n${BOLD}Display (eDP-1):${RESET}"
@@ -179,10 +195,11 @@ divider
 echo -e "${BOLD}  Summary — the following will be installed/configured${RESET}"
 divider
 echo -e "  Keyboard:      ${KBD_LABEL}"
+echo -e "  Logitech K380: ${OPT_K380}"
 echo -e "  Display:       eDP-1 ${EDP_RES}@${EDP_HZ} scale ${EDP_SCALE}"
-echo -e "  DNF optional:  qbittorrent=${OPT_QBITTORRENT}  steam=${OPT_STEAM}  obs=${OPT_OBS}  distrobox=${OPT_DISTROBOX}  docker=${OPT_DOCKER}  emacs=${OPT_EMACS}"
-echo -e "  Flatpak opt:   telegram=${OPT_TELEGRAM}  vlc=${OPT_VLC}  heroic=${OPT_HEROIC}  libremenu=${OPT_LIBRE}  spotify=${OPT_SPOTIFY}  bottles=${OPT_BOTTLES}  protonplus=${OPT_PROTONPLUS}  gearlever=${OPT_GEARLEVER}"
-echo -e "  Neovim:        ${OPT_NEOVIM}"
+echo -e "  DNF opt:       qbittorrent=${OPT_QBITTORRENT} steam=${OPT_STEAM} obs=${OPT_OBS} distrobox=${OPT_DISTROBOX} docker=${OPT_DOCKER} neovim=${OPT_NEOVIM} emacs=${OPT_EMACS}"
+echo -e "  Flatpak opt:   telegram=${OPT_TELEGRAM} heroic=${OPT_HEROIC} spotify=${OPT_SPOTIFY} bottles=${OPT_BOTTLES} protonplus=${OPT_PROTONPLUS} gearlever=${OPT_GEARLEVER}"
+echo -e "  Video player:  $(if $OPT_VLC; then echo "vlc (flatpak)"; else echo "totem (dnf)"; fi)"
 echo -e "  Shell:         ${SHELL_CHOICE}"
 echo -e "  Git identity:  ${OPT_GIT} $(if $OPT_GIT; then echo "${GIT_NAME} <${GIT_EMAIL}>"; fi)"
 echo -e "  Remove LibreOffice: ${OPT_REMOVE_LIBREOFFICE}"
@@ -246,6 +263,10 @@ sudo dnf remove -y \
   gnome-color-manager \
   gnome-software || true
 
+# Remove unwanted third-party repositories
+sudo rm -f /etc/yum.repos.d/google-chrome.repo
+sudo dnf copr remove -y phracek/PyCharm || true
+
 # =============================================================================
 # Step 4 - Install DNF packages
 # =============================================================================
@@ -256,7 +277,6 @@ DNF_PKGS=(
   google-noto-fonts-all
   adw-gtk3-theme
   gnome-tweaks
-  python3-pip
   wf-recorder
   fastfetch
   fd-find
@@ -274,6 +294,7 @@ $OPT_OBS         && DNF_PKGS+=(obs-studio)
 $OPT_DISTROBOX   && DNF_PKGS+=(distrobox)
 $OPT_STEAM       && DNF_PKGS+=(steam)
 $OPT_EMACS       && DNF_PKGS+=(emacs)
+$OPT_TOTEM       && DNF_PKGS+=(totem)
 
 # Enable mise COPR and add to install list
 if ! dnf copr list --enabled 2>/dev/null | grep -q "jdxcode/mise"; then
@@ -303,20 +324,20 @@ pipx ensurepath
 step "5 - Installing Flatpaks"
 
 FLATPAK_PKGS=(
+  page.codeberg.libre_menu_editor.LibreMenuEditor
   org.localsend.localsend_app
   io.github.kolunmi.Bazaar
   net.nokyan.Resources
 )
 
-$OPT_TELEGRAM   && FLATPAK_PKGS+=(org.telegram.desktop)
-$OPT_VLC        && FLATPAK_PKGS+=(org.videolan.VLC)
 $OPT_HEROIC     && FLATPAK_PKGS+=(com.heroicgameslauncher.hgl)
-$OPT_LIBRE      && FLATPAK_PKGS+=(page.codeberg.libre_menu_editor.LibreMenuEditor)
-$OPT_SPOTIFY    && FLATPAK_PKGS+=(com.spotify.Client)
+$OPT_DISTROBOX  && FLATPAK_PKGS+=(com.ranfdev.DistroShelf)
 $OPT_BOTTLES    && FLATPAK_PKGS+=(com.usebottles.bottles)
 $OPT_PROTONPLUS && FLATPAK_PKGS+=(com.vysp3r.ProtonPlus)
-$OPT_DISTROBOX  && FLATPAK_PKGS+=(com.ranfdev.DistroShelf)
+$OPT_TELEGRAM   && FLATPAK_PKGS+=(org.telegram.desktop)
 $OPT_GEARLEVER  && FLATPAK_PKGS+=(it.mijorus.gearlever)
+$OPT_SPOTIFY    && FLATPAK_PKGS+=(com.spotify.Client)
+$OPT_VLC        && FLATPAK_PKGS+=(org.videolan.VLC)
 
 flatpak install -y flathub "${FLATPAK_PKGS[@]}"
 
@@ -624,6 +645,7 @@ binds {
   Mod+Shift+Slash { show-hotkey-overlay; }
 
   Mod+Space { spawn-sh "noctalia msg panel-toggle launcher"; }
+  Mod+G { spawn "~/.local/bin/record-region.sh"; }
   Mod+B { spawn "zen-browser"; }
   Mod+Return { spawn "kitty"; }
   Mod+N { spawn "nautilus"; }
@@ -638,8 +660,8 @@ binds {
   XF86AudioPrev        allow-when-locked=true { spawn-sh "playerctl previous"; }
   XF86AudioNext        allow-when-locked=true { spawn-sh "playerctl next"; }
 
-  XF86MonBrightnessUp allow-when-locked=true { spawn "brightnessctl" "--class=backlight" "set" "+10%"; }
-  XF86MonBrightnessDown allow-when-locked=true { spawn "brightnessctl" "--class=backlight" "set" "10%-"; }
+  XF86MonBrightnessUp allow-when-locked=true { spawn-sh "noctalia msg brightness-up"; }
+  XF86MonBrightnessDown allow-when-locked=true { spawn-sh "noctalia msg brightness-down"; }
 
   Mod+O repeat=false { toggle-overview; }
 
@@ -760,9 +782,40 @@ EOF
 info "~/.config/niri/config.kdl created"
 
 # =============================================================================
-# Step 15 - Install and configure Numix icons + themes
+# Step 15 - Install local scripts and configure MIME handling
 # =============================================================================
-step "15 - Installing Numix icons and configuring themes"
+
+# Screen-region recording toggle (wf-recorder + slurp)
+cat > ~/.local/bin/record-region.sh << 'EOF'
+#!/usr/bin/env bash
+
+if pgrep -x wf-recorder >/dev/null; then
+  pkill -INT wf-recorder
+  exit 0
+fi
+
+mkdir -p "$HOME/Downloads"
+
+OUT="$HOME/Downloads/$(date +'%y%m%d-%H%M%S').mp4"
+
+GEOMETRY="$(slurp)" || exit 0
+
+wf-recorder -c h264_nvenc -p cq=15 -r 60 -g "$GEOMETRY" -f "$OUT"
+
+notify-send -t 1200 "Saved"
+EOF
+chmod +x ~/.local/bin/record-region.sh
+info "record-region.sh written to ~/.local/bin/record-region.sh"
+
+# Ensure ~/.config/mimeapps.list exists as a file (never a directory)
+[[ -d ~/.config/mimeapps.list ]] && rm -rf ~/.config/mimeapps.list
+touch ~/.config/mimeapps.list
+info "~/.config/mimeapps.list ensured as an empty file"
+
+# =============================================================================
+# Step 16 - Install and configure Numix icons + themes
+# =============================================================================
+step "16 - Installing Numix icons and configuring themes"
 
 _NUMIX_TMP="$(mktemp -d)"
 cd "$_NUMIX_TMP"
@@ -797,10 +850,10 @@ gsettings set org.gnome.desktop.interface gtk-theme "adw-gtk3-dark"
 info "Legacy application theme set to adw-gtk3-dark"
 
 # =============================================================================
-# Step 16 - Install Docker (optional)
+# Step 17 - Install Docker (optional)
 # =============================================================================
 if $OPT_DOCKER; then
-  step "16 - Installing Docker"
+  step "17 - Installing Docker"
   sudo dnf config-manager addrepo \
     --from-repofile https://download.docker.com/linux/fedora/docker-ce.repo
   sudo dnf install -y \
@@ -814,13 +867,13 @@ if $OPT_DOCKER; then
   info "Docker installed, service enabled and started"
   info "User '$USER' added to the docker group (takes effect after next login)"
 else
-  info "Skipping step 16 (Docker not requested)"
+  info "Skipping step 17 (Docker not requested)"
 fi
 
 # =============================================================================
-# Step 17 - Install and configure Monique
+# Step 18 - Install and configure Monique
 # =============================================================================
-step "17 - Installing and configuring monique (Wayland monitor profile manager)"
+step "18 - Installing and configuring monique (Wayland monitor profile manager)"
 pipx install monique --system-site-packages
 
 mkdir -p ~/.local/share/applications
@@ -839,7 +892,7 @@ EOF
 info "monique installed and desktop entry created at ~/.local/share/applications/monique.desktop"
 
 # =============================================================================
-# Step 18 - Disable split-lock mitigation
+# Step 19 - Disable split-lock mitigation
 # =============================================================================
 step "18 - Disabling split-lock mitigation"
 echo 'kernel.split_lock_mitigate=0' | sudo tee /etc/sysctl.d/99-splitlock.conf > /dev/null
@@ -847,9 +900,39 @@ sudo sysctl -p /etc/sysctl.d/99-splitlock.conf
 info "Split-lock mitigation disabled (/etc/sysctl.d/99-splitlock.conf)"
 
 # =============================================================================
-# Step 19 - System update, cleanup, and reboot
+# Step 20 - Configure Logitech K380 function keys (optional)
 # =============================================================================
-step "19 - System update and cleanup"
+if $OPT_K380; then
+  step "20 - Configuring Logitech K380 function keys"
+  _K380_TMP="$(mktemp -d)"
+  curl -fsSL -o "$_K380_TMP/k380.zip" \
+    https://github.com/jergusg/k380-function-keys-conf/archive/refs/tags/v1.1.zip
+  unzip -q "$_K380_TMP/k380.zip" -d "$_K380_TMP"
+  _K380_DIR="$_K380_TMP/k380-function-keys-conf-1.1"
+  chmod +x "$_K380_DIR"/*.sh 2>/dev/null || true
+
+  ( cd "$_K380_DIR" && sudo make install && sudo make reload )
+  info "k380_conf installed and udev rule registered (persists across reconnects)"
+
+  # Apply immediately if the keyboard is connected now
+  _K380_DEV="$( (cd "$_K380_DIR" && sudo ./fn_on.sh 2>&1 || true) | grep -oE 'hidraw[0-9]+' | head -n1)"
+  if [[ -n "$_K380_DEV" ]]; then
+    sudo k380_conf -d "/dev/$_K380_DEV" -f on \
+      && info "F keys enabled on /dev/$_K380_DEV" \
+      || warn "k380_conf failed; reconnect the keyboard to apply automatically"
+  else
+    info "K380 not connected now; F keys will be enabled automatically when it connects"
+  fi
+
+  rm -rf "$_K380_TMP"
+else
+  info "Skipping step 20 (Logitech K380 not requested)"
+fi
+
+# =============================================================================
+# Step 21 - System update, cleanup, and reboot
+# =============================================================================
+step "21 - System update and cleanup"
 sudo dnf upgrade -y
 sudo dnf remove -y rygel firefox
 sudo dnf clean all
@@ -859,7 +942,7 @@ sudo dnf autoremove -y
 # Done
 # =============================================================================
 divider
-echo -e "${BOLD}${GREEN}  ✓ Setup complete${RESET}"
+echo -e "${BOLD}${GREEN}  Setup complete${RESET}"
 divider
 echo ""
 if $OPT_GIT; then
