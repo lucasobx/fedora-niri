@@ -645,7 +645,6 @@ binds {
   Mod+Shift+Slash { show-hotkey-overlay; }
 
   Mod+Space { spawn-sh "noctalia msg panel-toggle launcher"; }
-  Mod+G { spawn "~/.local/bin/record-region.sh"; }
   Mod+B { spawn "zen-browser"; }
   Mod+Return { spawn "kitty"; }
   Mod+N { spawn "nautilus"; }
@@ -782,30 +781,8 @@ EOF
 info "~/.config/niri/config.kdl created"
 
 # =============================================================================
-# Step 15 - Install local scripts and configure MIME handling
+# Step 15 - Configure MIME handling
 # =============================================================================
-
-# Screen-region recording toggle (wf-recorder + slurp)
-cat > ~/.local/bin/record-region.sh << 'EOF'
-#!/usr/bin/env bash
-
-if pgrep -x wf-recorder >/dev/null; then
-  pkill -INT wf-recorder
-  exit 0
-fi
-
-mkdir -p "$HOME/Downloads"
-
-OUT="$HOME/Downloads/$(date +'%y%m%d-%H%M%S').mp4"
-
-GEOMETRY="$(slurp)" || exit 0
-
-wf-recorder -c h264_nvenc -p cq=15 -r 60 -g "$GEOMETRY" -f "$OUT"
-
-notify-send -t 1200 "Saved"
-EOF
-chmod +x ~/.local/bin/record-region.sh
-info "record-region.sh written to ~/.local/bin/record-region.sh"
 
 # Ensure ~/.config/mimeapps.list exists as a file (never a directory)
 [[ -d ~/.config/mimeapps.list ]] && rm -rf ~/.config/mimeapps.list
