@@ -228,7 +228,7 @@ echo -e "\n${BOLD}LibreOffice removal:${RESET}"
 OPT_REMOVE_LIBREOFFICE=false; ask_yn "Remove LibreOffice (pre-installed)?" && OPT_REMOVE_LIBREOFFICE=true || true
 
 divider
-echo -e "${BOLD}  Summary — the following will be installed/configured${RESET}"
+echo -e "${BOLD}  Summary - the following will be installed/configured${RESET}"
 divider
 echo -e "  Keyboard:      ${KBD_LABEL}"
 echo -e "  Logitech K380: ${OPT_K380}"
@@ -401,7 +401,7 @@ if [[ "$SHELL_CHOICE" == "bash" ]]; then
   step "7 - Configuring ~/.bashrc"
 
   if grep -q '_ZO_DOCTOR' ~/.bashrc; then
-    warn "Zoxide block already present in ~/.bashrc — skipping"
+    warn "Zoxide block already present in ~/.bashrc - skipping"
   else
     cat >> ~/.bashrc << 'EOF'
 
@@ -413,7 +413,7 @@ EOF
   fi
 
   if grep -q 'mise activate bash' ~/.bashrc; then
-    warn "mise block already present in ~/.bashrc — skipping"
+    warn "mise block already present in ~/.bashrc - skipping"
   else
     echo 'eval "$(~/.local/bin/mise activate bash)"' >> ~/.bashrc
     info "mise activation added to ~/.bashrc"
@@ -471,7 +471,7 @@ if [[ "$SHELL_CHOICE" == "bash" ]]; then
 
   # Write ~/.bash_profile block (idempotent check)
   if grep -q 'QT_QPA_PLATFORM' ~/.bash_profile 2>/dev/null; then
-    warn "Wayland block already present in ~/.bash_profile — skipping"
+    warn "Wayland block already present in ~/.bash_profile - skipping"
   else
     cat >> ~/.bash_profile << 'EOF'
 
@@ -484,7 +484,7 @@ EOF
     info "Environment block written to ~/.bash_profile"
   fi
 else
-  info "Skipping step 9 (fish selected — env vars already in ~/.config/fish/config.fish)"
+  info "Skipping step 9 (fish selected - env vars already in ~/.config/fish/config.fish)"
 fi
 
 # =============================================================================
@@ -942,7 +942,7 @@ if [[ "$GPU_VENDOR" == "nvidia" ]]; then
   sudo dracut --force
 
   if grep -q '__GLX_VENDOR_LIBRARY_NAME' /etc/environment 2>/dev/null; then
-    warn "NVIDIA environment block already present in /etc/environment — skipping"
+    warn "NVIDIA environment block already present in /etc/environment - skipping"
   else
     # Common to every NVIDIA branch
     sudo tee -a /etc/environment > /dev/null << 'EOF'
@@ -994,14 +994,14 @@ EOF
 EOF
   info "NVIDIA application profile written to keep niri VRAM usage low"
 
-  info "NVIDIA drivers take effect after the final reboot — verify then with: nvidia-smi"
+  info "NVIDIA drivers take effect after the final reboot - verify then with: nvidia-smi"
 
 elif [[ "$GPU_VENDOR" == "intel" ]]; then
   step "20 - Installing Intel media driver (VAAPI)"
   sudo dnf install -y intel-media-driver
 
   if grep -q 'LIBVA_DRIVER_NAME' /etc/environment 2>/dev/null; then
-    warn "LIBVA_DRIVER_NAME already present in /etc/environment — skipping"
+    warn "LIBVA_DRIVER_NAME already present in /etc/environment - skipping"
   else
     echo 'LIBVA_DRIVER_NAME=iHD' | sudo tee -a /etc/environment > /dev/null
     info "LIBVA_DRIVER_NAME=iHD written to /etc/environment"
@@ -1009,16 +1009,13 @@ elif [[ "$GPU_VENDOR" == "intel" ]]; then
 
 elif [[ "$GPU_VENDOR" == "amd" ]]; then
   step "20 - Configuring AMD graphics (Mesa + VA-API)"
-  # amdgpu + Mesa (RADV/radeonsi) are installed by default and drive niri out of the box.
-  # Swap Mesa's VA/VDPAU drivers to the RPM Fusion freeworld builds to unlock H.264/H.265
-  # hardware decoding, which Fedora's default builds omit for patent reasons.
   if rpm -q mesa-va-drivers-freeworld > /dev/null 2>&1; then
-    warn "mesa-va-drivers-freeworld already installed — skipping VA swap"
+    warn "mesa-va-drivers-freeworld already installed - skipping VA swap"
   else
     sudo dnf swap -y mesa-va-drivers mesa-va-drivers-freeworld
   fi
   if rpm -q mesa-vdpau-drivers-freeworld > /dev/null 2>&1; then
-    warn "mesa-vdpau-drivers-freeworld already installed — skipping VDPAU swap"
+    warn "mesa-vdpau-drivers-freeworld already installed - skipping VDPAU swap"
   else
     sudo dnf swap -y mesa-vdpau-drivers mesa-vdpau-drivers-freeworld
   fi
