@@ -87,6 +87,42 @@ while true; do
   esac
 done
 
+# --- Graphics drivers (auto-detected) ---
+echo -e "\n${BOLD}Graphics drivers:${RESET}"
+_GPU_IDS=""
+for _d in /sys/bus/pci/devices/*; do
+  _cls="$(cat "$_d/class" 2>/dev/null)" || continue
+  case "$_cls" in 0x0300*|0x0302*|0x0380*) ;; *) continue ;; esac
+  _ven="$(cat "$_d/vendor" 2>/dev/null)" || continue
+  _GPU_IDS="$_GPU_IDS $_ven"
+done
+
+# NVIDIA takes priority on hybrid (Intel + NVIDIA) laptops
+GPU_VENDOR="none"
+case " $_GPU_IDS " in
+  *" 0x10de "*) GPU_VENDOR="nvidia" ;;
+  *" 0x1002 "*) GPU_VENDOR="amd"    ;;
+  *" 0x8086 "*) GPU_VENDOR="intel"  ;;
+esac
+info "Detected GPU vendor: ${GPU_VENDOR}"
+
+NVIDIA_BRANCH=""
+if [[ "$GPU_VENDOR" == "nvidia" ]]; then
+  _NV_NAME="$(lspci -nn 2>/dev/null | grep -Ei 'vga|3d|display' | grep -i nvidia | head -n1 | sed -E 's/.*: //')" || true
+  if [[ -n "${_NV_NAME:-}" ]]; then echo -e "  Detected card: ${_NV_NAME}"; fi
+  echo -e "${BOLD}  NVIDIA driver branch:${RESET}"
+  echo "    1) Current - Turing (GTX 16 / RTX 20) and newer"
+  echo "    2) Legacy 580xx - Maxwell / Pascal (GeForce 900 and 10 series)"
+  while true; do
+    read -rp "  Select NVIDIA branch [1/2]: " _nv_choice
+    case "$_nv_choice" in
+      1) NVIDIA_BRANCH="current"; break ;;
+      2) NVIDIA_BRANCH="580xx";   break ;;
+      *) echo "    Please enter 1 or 2." ;;
+    esac
+  done
+fi
+
 # --- Keyboard layout ---
 echo -e "\n${BOLD}Keyboard layout:${RESET}"
 echo "    1) International (us/intl)"
@@ -200,6 +236,7 @@ echo -e "  Display:       eDP-1 ${EDP_RES}@${EDP_HZ} scale ${EDP_SCALE}"
 echo -e "  DNF opt:       qbittorrent=${OPT_QBITTORRENT} steam=${OPT_STEAM} obs=${OPT_OBS} distrobox=${OPT_DISTROBOX} docker=${OPT_DOCKER} neovim=${OPT_NEOVIM} emacs=${OPT_EMACS}"
 echo -e "  Flatpak opt:   telegram=${OPT_TELEGRAM} heroic=${OPT_HEROIC} spotify=${OPT_SPOTIFY} bottles=${OPT_BOTTLES} protonplus=${OPT_PROTONPLUS} gearlever=${OPT_GEARLEVER}"
 echo -e "  Video player:  $(if $OPT_VLC; then echo "vlc (flatpak)"; else echo "totem (dnf)"; fi)"
+echo -e "  Graphics:      $(if [[ "$GPU_VENDOR" == "nvidia" ]]; then echo "nvidia (${NVIDIA_BRANCH})"; else echo "$GPU_VENDOR"; fi)"
 echo -e "  Shell:         ${SHELL_CHOICE}"
 echo -e "  Git identity:  ${OPT_GIT} $(if $OPT_GIT; then echo "${GIT_NAME} <${GIT_EMAIL}>"; fi)"
 echo -e "  Remove LibreOffice: ${OPT_REMOVE_LIBREOFFICE}"
@@ -878,16 +915,124 @@ info "monique installed and desktop entry created at ~/.local/share/applications
 # =============================================================================
 # Step 19 - Disable split-lock mitigation
 # =============================================================================
-step "18 - Disabling split-lock mitigation"
+step "19 - Disabling split-lock mitigation"
 echo 'kernel.split_lock_mitigate=0' | sudo tee /etc/sysctl.d/99-splitlock.conf > /dev/null
 sudo sysctl -p /etc/sysctl.d/99-splitlock.conf
 info "Split-lock mitigation disabled (/etc/sysctl.d/99-splitlock.conf)"
 
 # =============================================================================
-# Step 20 - Configure Logitech K380 function keys (optional)
+# Step 20 - Install graphics drivers
+# =============================================================================
+if [[ "$GPU_VENDOR" == "nvidia" ]]; then
+  step "20 - Installing NVIDIA drivers (${NVIDIA_BRANCH}) and enabling Wayland support"
+
+  case "$NVIDIA_BRANCH" in
+    current) sudo dnf install -y akmod-nvidia xorg-x11-drv-nvidia-cuda xorg-x11-drv-nvidia-libs.i686 ;;
+    580xx)   sudo dnf install -y akmod-nvidia-580xx xorg-x11-drv-nvidia-580xx-cuda ;;
+  esac
+
+  # Enable DRM kernel mode setting (required for Wayland)
+  echo 'options nvidia_drm modeset=1 fbdev=1' | sudo tee /etc/modprobe.d/nvidia-drm-modeset.conf > /dev/null
+
+  # Early-load the NVIDIA modules
+  printf 'nvidia\nnvidia_modeset\nnvidia_uvm\nnvidia_drm\n' | sudo tee /etc/modules-load.d/nvidia.conf > /dev/null
+
+  # Build the kernel module now and regenerate the initramfs, so no mid-install reboot is needed
+  sudo akmods --force
+  sudo dracut --force
+
+  if grep -q '__GLX_VENDOR_LIBRARY_NAME' /etc/environment 2>/dev/null; then
+    warn "NVIDIA environment block already present in /etc/environment — skipping"
+  else
+    # Common to every NVIDIA branch
+    sudo tee -a /etc/environment > /dev/null << 'EOF'
+__GL_SHADER_DISK_CACHE_SKIP_CLEANUP=1
+__GL_ALLOW_UNOFFICIAL_PROTOCOL=1
+__GLX_VENDOR_LIBRARY_NAME=nvidia
+NVIDIA_DRIVER_CAPABILITIES=all
+GSK_RENDERER=gl
+LD_PRELOAD=""
+EOF
+    # Modern-only: NVDEC-backed VAAPI and Proton NVAPI make sense only on the current branch
+    if [[ "$NVIDIA_BRANCH" == "current" ]]; then
+      sudo tee -a /etc/environment > /dev/null << 'EOF'
+LIBVA_DRIVER_NAME=nvidia
+PROTON_ENABLE_WAYLAND=1
+PROTON_ENABLE_NVAPI=1
+NVD_BACKEND=direct
+EOF
+    fi
+    info "NVIDIA environment variables written to /etc/environment"
+  fi
+
+  # niri-specific: cap the NVIDIA free buffer pool so VRAM usage stays low
+  # (https://niri-wm.github.io/niri/Nvidia.html#high-vram-usage-fix)
+  sudo mkdir -p /etc/nvidia/nvidia-application-profiles-rc.d
+  sudo tee /etc/nvidia/nvidia-application-profiles-rc.d/50-limit-free-buffer-pool-in-wayland-compositors.json > /dev/null << 'EOF'
+{
+    "rules": [
+        {
+            "pattern": {
+                "feature": "procname",
+                "matches": "niri"
+            },
+            "profile": "Limit Free Buffer Pool On Wayland Compositors"
+        }
+    ],
+    "profiles": [
+        {
+            "name": "Limit Free Buffer Pool On Wayland Compositors",
+            "settings": [
+                {
+                    "key": "GLVidHeapReuseRatio",
+                    "value": 0
+                }
+            ]
+        }
+    ]
+}
+EOF
+  info "NVIDIA application profile written to keep niri VRAM usage low"
+
+  info "NVIDIA drivers take effect after the final reboot — verify then with: nvidia-smi"
+
+elif [[ "$GPU_VENDOR" == "intel" ]]; then
+  step "20 - Installing Intel media driver (VAAPI)"
+  sudo dnf install -y intel-media-driver
+
+  if grep -q 'LIBVA_DRIVER_NAME' /etc/environment 2>/dev/null; then
+    warn "LIBVA_DRIVER_NAME already present in /etc/environment — skipping"
+  else
+    echo 'LIBVA_DRIVER_NAME=iHD' | sudo tee -a /etc/environment > /dev/null
+    info "LIBVA_DRIVER_NAME=iHD written to /etc/environment"
+  fi
+
+elif [[ "$GPU_VENDOR" == "amd" ]]; then
+  step "20 - Configuring AMD graphics (Mesa + VA-API)"
+  # amdgpu + Mesa (RADV/radeonsi) are installed by default and drive niri out of the box.
+  # Swap Mesa's VA/VDPAU drivers to the RPM Fusion freeworld builds to unlock H.264/H.265
+  # hardware decoding, which Fedora's default builds omit for patent reasons.
+  if rpm -q mesa-va-drivers-freeworld > /dev/null 2>&1; then
+    warn "mesa-va-drivers-freeworld already installed — skipping VA swap"
+  else
+    sudo dnf swap -y mesa-va-drivers mesa-va-drivers-freeworld
+  fi
+  if rpm -q mesa-vdpau-drivers-freeworld > /dev/null 2>&1; then
+    warn "mesa-vdpau-drivers-freeworld already installed — skipping VDPAU swap"
+  else
+    sudo dnf swap -y mesa-vdpau-drivers mesa-vdpau-drivers-freeworld
+  fi
+  info "AMD: amdgpu + Mesa in use; VA/VDPAU drivers swapped to freeworld for full hardware video decode"
+
+else
+  info "Skipping step 20 (no supported GPU detected)"
+fi
+
+# =============================================================================
+# Step 21 - Configure Logitech K380 function keys (optional)
 # =============================================================================
 if $OPT_K380; then
-  step "20 - Configuring Logitech K380 function keys"
+  step "21 - Configuring Logitech K380 function keys"
   _K380_TMP="$(mktemp -d)"
   curl -fsSL -o "$_K380_TMP/k380.zip" \
     https://github.com/jergusg/k380-function-keys-conf/archive/refs/tags/v1.1.zip
@@ -910,13 +1055,13 @@ if $OPT_K380; then
 
   rm -rf "$_K380_TMP"
 else
-  info "Skipping step 20 (Logitech K380 not requested)"
+  info "Skipping step 21 (Logitech K380 not requested)"
 fi
 
 # =============================================================================
-# Step 21 - System update, cleanup, and reboot
+# Step 22 - System update, cleanup, and reboot
 # =============================================================================
-step "21 - System update and cleanup"
+step "22 - System update and cleanup"
 sudo dnf upgrade -y
 sudo dnf remove -y rygel firefox
 sudo dnf clean all
