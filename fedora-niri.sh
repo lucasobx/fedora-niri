@@ -244,20 +244,20 @@ echo ""
 ask_yn "Proceed?" || { echo "Aborted."; exit 0; }
 
 # =============================================================================
-# Step 1 - Swap ffmpeg-free for ffmpeg full
+# Step 1 - Enable RPM Fusion repositories
 # =============================================================================
-step "1 - Swapping ffmpeg-free for ffmpeg full"
-sudo dnf swap -y ffmpeg-free ffmpeg --allowerasing
+step "1 - Enabling RPM Fusion repositories"
+
+sudo dnf install -y "https://download1.rpmfusion.org/free/fedora/rpmfusion-free-release-$(rpm -E %fedora).noarch.rpm"
+sudo dnf install -y "https://download1.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-$(rpm -E %fedora).noarch.rpm"
+sudo dnf update -y
 
 # =============================================================================
-# Step 2 - Enable RPM Fusion repositories
+# Step 2 - Swap ffmpeg-free for ffmpeg full
 # =============================================================================
-step "2 - Enabling RPM Fusion repositories"
-sudo dnf install -y \
-  "https://download1.rpmfusion.org/free/fedora/rpmfusion-free-release-$(rpm -E %fedora).noarch.rpm"
-sudo dnf install -y \
-  "https://download1.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-$(rpm -E %fedora).noarch.rpm"
-sudo dnf update -y
+step "2 - Swapping ffmpeg-free for ffmpeg full"
+
+sudo dnf swap -y ffmpeg-free ffmpeg --allowerasing
 
 # =============================================================================
 # Step 3 - Remove unwanted pre-installed packages
