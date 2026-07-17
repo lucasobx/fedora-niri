@@ -1,24 +1,22 @@
-# Fedora 44 + niri + noctalia-shell
+# Fedora 44 + Niri + Noctalia-shell
 
-Automated setup script for a clean and minimal Fedora 44 workstation using [`niri`](https://github.com/YaLTeR/niri) and [`noctalia-shell`](https://github.com/noctalia-dev/noctalia-shell).
-
-The script installs and configures a complete Wayland desktop environment with sensible defaults, including:
-
-- Niri
-- Noctalia-shell
-- Kitty terminal
-- Numix icon themes
-- Wayland/Qt/Electron environment tweaks
-- Preconfigured keybinds and desktop layout
-- Optional gaming/media/software packages
-- Optional development tools
-- Optional git identity setup
+Automated setup script for a clean, minimal Fedora 44 workstation built around [`niri`](https://github.com/YaLTeR/niri) and [`noctalia-shell`](https://github.com/noctalia-dev/noctalia-shell), with automatic GPU driver setup (NVIDIA / Intel / AMD), sensible defaults, optional applications, and preconfigured keybinds.
 
 > [!NOTE]
-> The script intentionally removes most pre-installed GNOME applications to keep the system minimal. `GNOME Software` is also removed after setup. Flatpak management can be done through `Bazaar`, which is installed by default.
-> - The script must be run as a regular user (not root). `sudo` is used internally when required.
-> - The installer stops immediately on errors.
-> - The default configuration is optimized for Wayland.
+> - Run the script as a regular user (not root), `sudo` is invoked internally when needed.
+> - Most pre-installed GNOME apps are removed to keep the system minimal, including `GNOME Software`. Manage Flatpaks with `Bazaar`, installed by default.
+
+---
+
+## Contents
+
+- [Installation](#installation)
+- [Graphics drivers](#graphics-drivers)
+- [Logitech K380 keyboard](#logitech-k380-keyboard)
+- [Steam H.264 codec support](#steam-h264-codec-support)
+- [Keyboard shortcuts](#keyboard-shortcuts)
+- [Installed by default](#installed-by-default)
+- [Optional](#optional)
 
 ---
 
@@ -26,111 +24,32 @@ The script installs and configures a complete Wayland desktop environment with s
 
 ## 1. Create a bootable USB drive
 
-Create a bootable USB using either:
-
-- `Ventoy`
-- `Fedora Media Writer`
-
-Use the [**Fedora Everything 44**](https://fedoraproject.org/misc/#everything) ISO.
+Use `Ventoy` or `Fedora Media Writer` with the [**Fedora Everything 44**](https://fedoraproject.org/misc/#everything) ISO.
 
 During installation:
 
-- Select:
-  - `Fedora Workstation`
-- Enable:
-  - `C Development Tools and Libraries`
-  - `Development Tools`
+- Select `Fedora Workstation`
+- Enable `C Development Tools and Libraries` and `Development Tools`
 
----
+## 2. Enable third-party repositories and update
 
-## 2. Enable third-party repositories and update the system
-
-After the first boot:
-
-1. Open **GNOME Software**
-2. Enable:
-   - `Third Party Software Repositories`
-3. Run:
+After the first boot, open **GNOME Software**, enable `Third Party Software Repositories`, then run:
 
 ```bash
 sudo dnf upgrade
 ```
 
----
-
 ## 3. Clone and run the setup script
-
-Clone the repository:
 
 ```bash
 git clone https://github.com/lucasobx/fedora-niri.git ~/fedora-niri
-```
-
-Enter the directory:
-
-```bash
 cd ~/fedora-niri
+chmod +x fedora-niri.sh && ./fedora-niri.sh
 ```
 
-Run the installer:
+When it finishes, reboot and select the `niri` session at GDM before logging in.
 
-```bash
-chmod +x setup.sh && ./setup.sh
-```
-
-After installation finishes:
-
-1. Reboot the system
-2. At GDM, select the `niri` session before logging in
-
----
-
-# Shell
-
-During setup you can choose between **bash** (default) and **fish**.
-
-**bash** - keeps the existing shell. Zoxide is initialized in `~/.bashrc` and environment variables are written to `~/.bash_profile`.
-
-**fish** - installs fish, sets it as the default shell via `chsh`, and writes `~/.config/fish/config.fish` with environment variables, PATH configuration, `mise` activation, and zoxide integration.
-
----
-
-# Required post-install configuration
-
-After logging into `niri`, some `noctalia-shell` settings must be enabled manually.
-
-## Configure idle management
-
-1. Right-click the top bar
-2. Open:
-   - `Settings`
-3. Navigate to:
-   - `Idle`
-4. Enable:
-   - `Enable idle management`
-
-## Install required plugins
-
-1. Right-click the top bar
-2. Open:
-   - `Settings`
-3. Navigate to:
-   - `Plugins`
-   - `Available`
-
-Install:
-
-- `Polkit Agent`
-
-Optional:
-
-- `Network Manager VPN` (if you use VPNs)
-
----
-
-# Optional cleanup
-
-If you do not plan to use the GNOME terminal (`ptyxis`), remove it:
+Optionally remove the pre-installed GNOME terminal:
 
 ```bash
 sudo dnf remove ptyxis
@@ -138,92 +57,112 @@ sudo dnf remove ptyxis
 
 ---
 
+# Graphics drivers
+
+The script detects your GPU automatically and sets up the matching stack:
+
+- **NVIDIA** - proprietary drivers from RPM Fusion (you confirm the branch: *current* for Turing / RTX 20 and newer, or *legacy 580xx* for Maxwell / Pascal), DRM modeset for Wayland, and the niri VRAM-usage fix.
+- **Intel** - `intel-media-driver` with `LIBVA_DRIVER_NAME=iHD` for VA-API.
+- **AMD** - in-kernel `amdgpu` + Mesa, with the VA/VDPAU drivers swapped to the RPM Fusion `freeworld` builds for full H.264 / H.265 hardware decoding.
+
+> [!NOTE]
+> If an NVIDIA GPU is detected, the drivers become active after rebooting (check with `nvidia-smi`). Make sure **Secure Boot is disabled**.
+
+---
+
+# Logitech K380 keyboard
+
+If you answer yes during setup, the script installs [`k380-function-keys-conf`](https://github.com/jergusg/k380-function-keys-conf) so the top row acts as standard **F keys**.
+
+---
+
 # Steam H.264 codec support
 
-If you installed Steam, enable H.264 codec support in the client.
-
-## Steps
-
-Close Steam completely, then run:
+If you installed Steam, enable H.264 codec support by closing Steam completely and running:
 
 ```bash
 steam steam://unlockh264/
 ```
 
-Steam will launch automatically.
-
-After the process finishes:
-
-1. Close Steam again
-2. Launch Steam normally
+Steam relaunches automatically. When it finishes, close and reopen it normally.
 
 ---
 
-## Default keyboard shortcuts
+# Keyboard shortcuts
 
-All shortcuts use the **Super** (`Mod`) key (usually the Windows key).
+All shortcuts use the **Super** (`Mod`) key. Press `Mod` + `Shift` + `/` to show the in-session cheat sheet.
 
 | Action | Shortcut |
 |--------|----------|
 | Terminal (kitty) | `Mod` + `Return` |
-| Browser | `Mod` + `B` |
+| Browser (Zen) | `Mod` + `B` |
+| Files (Nautilus) | `Mod` + `N` |
 | Launcher | `Mod` + `Space` |
+| Overview | `Mod` + `O` |
+| Screenshot (region / screen / window) | `Print` / `Ctrl` + `Print` / `Alt` + `Print` |
 | Focus column left/right | `Mod` + `←` / `→` |
 | Focus window down/up | `Mod` + `↓` / `↑` |
 | Move column left/right | `Mod` + `Ctrl` + `←` / `→` |
-| Switch workspace | `Mod` + `1` … `9` |
-| Move column to workspace | `Mod` + `Ctrl` + `1` … `9` |
+| Switch workspace | `Mod` + `PgUp` / `PgDn` (or `Mod` + `U` / `I`) |
+| Move column to workspace | `Mod` + `Ctrl` + `PgUp` / `PgDn` |
 | Maximize column | `Mod` + `F` |
 | Close window | `Mod` + `Q` |
 | Quit niri | `Mod` + `Shift` + `E` |
 
-A full list of bindings is available in `~/.config/niri/config.kdl`.
+A full list is in `~/.config/niri/config.kdl`.
 
 ---
 
-# Included defaults
+# Installed by default
 
-## Core packages
+## Desktop environment
 
-- `Niri`
-- `Noctalia-shell`
-- `Numix Icon Themes`
-- `wf-recorder` + `slurp`
-- `mise` (version manager for languages, env vars, and tasks per project)
-- `Zen Browser`
-- `Fastfetch`
-- `zoxide`
-- `kitty`
-- `pipx`
+- Niri
+- Noctalia-shell
+- Numix icon themes
 
-# Optional Applications
+## Graphics
 
-## DNF Packages
+- Auto-detected NVIDIA / Intel / AMD driver stack)
 
-- qBittorrent
-- OBS Studio
-- Calibre
-- Steam
-
----
-
-## Flatpak Applications
-
-- Heroic Games Launcher
+## Applications
 - Libre Menu Editor
+- Zen Browser
+- Localsend
+- Monique
+- Bazaar
+- Kitty
+
+### CLI Tools
+- `mise`, `pipx`, `zoxide`, `fastfetch`, `fd-find`, `wf-recorder`, `slurp`
+
+---
+
+# Optional
+
+## Applications
+- **VLC** or **Totem** (GNOME Videos)
+- OBS Studio
 - Gear Lever
-- YACReader
-- ProtonPlus
+- Resources
+- qBittorrent
 - Telegram
 - Spotify
+
+### Gaming
+- Steam
+- Heroic
 - Bottles
-- Anki
-- VLC
+- ProtonPlus
 
----
-
-## Optional Development Tools
-
-- Neovim (basic setup without plugins)
-- Distrobox
+### Development tools
+- Distrobox (+ DistroShelf)
 - Docker
+- Emacs
+- Neovim
+
+## System
+- Shell: **bash** (default) or **fish**
+- Logitech K380 function keys
+- Remove LibreOffice
+- Git identity
