@@ -140,48 +140,8 @@ done
 echo -e "\n${BOLD}Logitech K380:${RESET}"
 OPT_K380=false; ask_yn "Do you own a Logitech K380 keyboard? (enable standard F keys)" && OPT_K380=true || true
 
-# --- Display profile ---
-echo -e "\n${BOLD}Display (eDP-1):${RESET}"
-
-echo "  Resolution:"
-echo "    1) 1920x1080"
-echo "    2) 2560x1440"
-echo "    3) 2560x1600"
-echo "    4) 3840x2160"
-while true; do
-  read -rp "  Select resolution [1/2/3/4]: " _res_choice
-  case "$_res_choice" in
-    1) EDP_RES="1920x1080"; break ;;
-    2) EDP_RES="2560x1440"; break ;;
-    3) EDP_RES="2560x1600"; break ;;
-    4) EDP_RES="3840x2160"; break ;;
-    *) echo "    Please enter 1, 2, 3 or 4." ;;
-  esac
-done
-
-echo "  Refresh rate:"
-echo "    1) 60Hz"
-echo "    2) 75Hz"
-echo "    3) 90Hz"
-echo "    4) 120Hz"
-echo "    5) 144Hz"
-echo "    6) 165Hz"
-echo "    7) 240Hz"
-while true; do
-  read -rp "  Select refresh rate [1/2/3/4/5/6/7]: " _hz_choice
-  case "$_hz_choice" in
-    1) EDP_HZ="60Hz";  break ;;
-    2) EDP_HZ="75Hz";  break ;;
-    3) EDP_HZ="90Hz";  break ;;
-    4) EDP_HZ="120Hz"; break ;;
-    5) EDP_HZ="144Hz"; break ;;
-    6) EDP_HZ="165Hz"; break ;;
-    7) EDP_HZ="240Hz"; break ;;
-    *) echo "    Please enter 1 through 7." ;;
-  esac
-done
-
-echo "  Scale:"
+# --- Display ---
+echo "  Display scale:"
 echo "    1) 100%"
 echo "    2) 125%"
 echo "    3) 133%"
@@ -232,7 +192,7 @@ echo -e "${BOLD}  Summary - the following will be installed/configured${RESET}"
 divider
 echo -e "  Keyboard:      ${KBD_LABEL}"
 echo -e "  Logitech K380: ${OPT_K380}"
-echo -e "  Display:       eDP-1 ${EDP_RES}@${EDP_HZ} scale ${EDP_SCALE}"
+echo -e "  Display:       scale ${EDP_SCALE}"
 echo -e "  DNF opt:       qbittorrent=${OPT_QBITTORRENT} steam=${OPT_STEAM} obs=${OPT_OBS} distrobox=${OPT_DISTROBOX} docker=${OPT_DOCKER} neovim=${OPT_NEOVIM} emacs=${OPT_EMACS}"
 echo -e "  Flatpak opt:   telegram=${OPT_TELEGRAM} heroic=${OPT_HEROIC} spotify=${OPT_SPOTIFY} bottles=${OPT_BOTTLES} protonplus=${OPT_PROTONPLUS} gearlever=${OPT_GEARLEVER}"
 echo -e "  Video player:  $(if $OPT_VLC; then echo "vlc (flatpak)"; else echo "totem (dnf)"; fi)"
@@ -585,9 +545,6 @@ else
     }"
 fi
 
-# Strip "Hz" suffix for niri mode format
-EDP_HZ_NUM="${EDP_HZ%Hz}"
-
 cat > ~/.config/niri/config.kdl << EOF
 input {
   keyboard {
@@ -611,7 +568,6 @@ ${XKB_BLOCK}
 }
 
 output "eDP-1" {
-  mode "${EDP_RES}@${EDP_HZ_NUM}"
   scale ${EDP_SCALE}
 }
 
