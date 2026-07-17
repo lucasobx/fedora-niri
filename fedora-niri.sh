@@ -526,9 +526,14 @@ mv ~/fedora-niri/Wallpapers ~/Pictures/Wallpapers
 info "Wallpapers installed to ~/Pictures/Wallpapers"
 
 # =============================================================================
-# Step 14 - Configure niri
+# Step 14 - Configure noctalia and niri
 # =============================================================================
-step "14 - Configuring niri"
+step "14 - Configuring noctalia and niri"
+
+mkdir -p ~/.local/state/noctalia
+mv ~/fedora-local/settings.toml ~/.local/state/noctalia/
+info "Noctalia settings moved to ~/.local/state/noctalia"
+
 mkdir -p ~/.config/niri
 
 # Build xkb block according to keyboard choice
