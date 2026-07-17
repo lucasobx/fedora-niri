@@ -66,12 +66,13 @@ OPT_STEAM=false;       ask_yn "Install Steam?"       && OPT_STEAM=true       || 
 
 # --- Optional Flatpaks ---
 echo -e "\n${BOLD}Flatpak packages:${RESET}"
-OPT_BOTTLES=false;    ask_yn "Install Bottles? (Install Windows apps via Wine)" && OPT_BOTTLES=true    || true
-OPT_GEARLEVER=false;  ask_yn "Install Gear Lever? (AppImage manager)"           && OPT_GEARLEVER=true  || true
-OPT_HEROIC=false;     ask_yn "Install Heroic Games Launcher?"                   && OPT_HEROIC=true     || true
-OPT_PROTONPLUS=false; ask_yn "Install ProtonPlus?"                              && OPT_PROTONPLUS=true || true
-OPT_TELEGRAM=false;   ask_yn "Install Telegram?"                                && OPT_TELEGRAM=true   || true
-OPT_SPOTIFY=false;    ask_yn "Install Spotify?"                                 && OPT_SPOTIFY=true    || true
+OPT_BOTTLES=false;    ask_yn "Install Bottles? (Windows apps via Wine)" && OPT_BOTTLES=true    || true
+OPT_GEARLEVER=false;  ask_yn "Install Gear Lever? (AppImage manager)"   && OPT_GEARLEVER=true  || true
+OPT_RESOURCES=false;  ask_yn "Install Resources? (System monitor)"      && OPT_RESOURCES=true  || true
+OPT_HEROIC=false;     ask_yn "Install Heroic Games Launcher?"           && OPT_HEROIC=true     || true
+OPT_PROTONPLUS=false; ask_yn "Install ProtonPlus?"                      && OPT_PROTONPLUS=true || true
+OPT_TELEGRAM=false;   ask_yn "Install Telegram?"                        && OPT_TELEGRAM=true   || true
+OPT_SPOTIFY=false;    ask_yn "Install Spotify?"                         && OPT_SPOTIFY=true    || true
 
 # --- Video player ---
 echo -e "\n${BOLD}Video player:${RESET}"
@@ -194,7 +195,7 @@ echo -e "  Keyboard:      ${KBD_LABEL}"
 echo -e "  Logitech K380: ${OPT_K380}"
 echo -e "  Display:       scale ${EDP_SCALE}"
 echo -e "  DNF opt:       qbittorrent=${OPT_QBITTORRENT} steam=${OPT_STEAM} obs=${OPT_OBS} distrobox=${OPT_DISTROBOX} docker=${OPT_DOCKER} neovim=${OPT_NEOVIM} emacs=${OPT_EMACS}"
-echo -e "  Flatpak opt:   telegram=${OPT_TELEGRAM} heroic=${OPT_HEROIC} spotify=${OPT_SPOTIFY} bottles=${OPT_BOTTLES} protonplus=${OPT_PROTONPLUS} gearlever=${OPT_GEARLEVER}"
+echo -e "  Flatpak opt:   telegram=${OPT_TELEGRAM} heroic=${OPT_HEROIC} spotify=${OPT_SPOTIFY} bottles=${OPT_BOTTLES} protonplus=${OPT_PROTONPLUS} gearlever=${OPT_GEARLEVER} resources=${OPT_RESOURCES}"
 echo -e "  Video player:  $(if $OPT_VLC; then echo "vlc (flatpak)"; else echo "totem (dnf)"; fi)"
 echo -e "  Graphics:      $(if [[ "$GPU_VENDOR" == "nvidia" ]]; then echo "nvidia (${NVIDIA_BRANCH})"; else echo "$GPU_VENDOR"; fi)"
 echo -e "  Shell:         ${SHELL_CHOICE}"
@@ -324,7 +325,6 @@ FLATPAK_PKGS=(
   page.codeberg.libre_menu_editor.LibreMenuEditor
   org.localsend.localsend_app
   io.github.kolunmi.Bazaar
-  net.nokyan.Resources
 )
 
 $OPT_HEROIC     && FLATPAK_PKGS+=(com.heroicgameslauncher.hgl)
@@ -333,6 +333,7 @@ $OPT_BOTTLES    && FLATPAK_PKGS+=(com.usebottles.bottles)
 $OPT_PROTONPLUS && FLATPAK_PKGS+=(com.vysp3r.ProtonPlus)
 $OPT_TELEGRAM   && FLATPAK_PKGS+=(org.telegram.desktop)
 $OPT_GEARLEVER  && FLATPAK_PKGS+=(it.mijorus.gearlever)
+$OPT_RESOURCES  && FLATPAK_PKGS+=(net.nokyan.Resources)
 $OPT_SPOTIFY    && FLATPAK_PKGS+=(com.spotify.Client)
 $OPT_VLC        && FLATPAK_PKGS+=(org.videolan.VLC)
 
