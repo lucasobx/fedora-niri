@@ -955,43 +955,28 @@ if $OPT_DOCKER; then
   info "Docker installed, service enabled and started"
   info "User '$USER' added to the docker group (takes effect after next login)"
 else
-  info "Skipping step 17 (Docker not requested)"
+  info "Skipping step 16 (Docker not requested)"
+fi
+mark_done 16
 fi
 
 # =============================================================================
-# Step 18 - Install and configure Monique
+# Step 17 - Disable split-lock mitigation
 # =============================================================================
-step "18 - Installing and configuring monique (Wayland monitor profile manager)"
-pipx install monique --system-site-packages
-
-mkdir -p ~/.local/share/applications
-cat > ~/.local/share/applications/monique.desktop << 'EOF'
-[Desktop Entry]
-Type=Application
-Name=Monique
-Comment=Wayland monitor profile manager
-Exec=/usr/bin/env monique
-Icon=preferences-desktop-display-randr
-Terminal=false
-Categories=Settings;System;
-StartupNotify=true
-Hidden=false
-EOF
-info "monique installed and desktop entry created at ~/.local/share/applications/monique.desktop"
-
-# =============================================================================
-# Step 19 - Disable split-lock mitigation
-# =============================================================================
-step "19 - Disabling split-lock mitigation"
+if pending 17; then
+step "17 - Disabling split-lock mitigation"
 echo 'kernel.split_lock_mitigate=0' | sudo tee /etc/sysctl.d/99-splitlock.conf > /dev/null
 sudo sysctl -p /etc/sysctl.d/99-splitlock.conf
 info "Split-lock mitigation disabled (/etc/sysctl.d/99-splitlock.conf)"
+mark_done 17
+fi
 
 # =============================================================================
-# Step 20 - Install graphics drivers
+# Step 18 - Install graphics drivers
 # =============================================================================
+if pending 18; then
 if [[ "$GPU_VENDOR" == "nvidia" ]]; then
-  step "20 - Installing NVIDIA drivers (${NVIDIA_BRANCH}) and enabling Wayland support"
+  step "18 - Installing NVIDIA drivers (${NVIDIA_BRANCH}) and enabling Wayland support"
 
   case "$NVIDIA_BRANCH" in
     current) sudo dnf install -y akmod-nvidia xorg-x11-drv-nvidia-cuda xorg-x11-drv-nvidia-libs.i686 ;;
