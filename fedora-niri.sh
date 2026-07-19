@@ -146,6 +146,15 @@ case " $_GPU_IDS " in
 esac
 info "Detected GPU vendor: ${GPU_VENDOR}"
 
+# Detect an Intel iGPU independently of the primary vendor
+HAS_INTEL_IGPU=false
+case " $_GPU_IDS " in
+  *" 0x8086 "*) HAS_INTEL_IGPU=true ;;
+esac
+if [[ "$GPU_VENDOR" == "nvidia" ]] && $HAS_INTEL_IGPU; then
+  info "Hybrid GPU detected: Intel iGPU + NVIDIA dGPU"
+fi
+
 NVIDIA_BRANCH=""
 if [[ "$GPU_VENDOR" == "nvidia" ]]; then
   _NV_NAME="$(lspci -nn 2>/dev/null | grep -Ei 'vga|3d|display' | grep -i nvidia | head -n1 | sed -E 's/.*: //')" || true
@@ -463,11 +472,6 @@ else
   chsh -s "$(command -v fish)"
   mkdir -p ~/.config/fish
   cat > ~/.config/fish/config.fish << 'EOF'
-# Wayland / Qt / GTK environment
-set -gx QT_WAYLAND_DISABLE_WINDOWDECORATION 1
-set -gx ELECTRON_OZONE_PLATFORM_HINT auto
-set -gx QT_QPA_PLATFORMTHEME gtk3
-set -gx QT_QPA_PLATFORM wayland
 fish_add_path $HOME/.local/bin $HOME/bin
 /usr/bin/mise activate fish | source
 if status is-interactive
@@ -503,35 +507,38 @@ fi
 sudo dnf update -y
 sudo dnf install -y niri --setopt=install_weak_deps=False
 sudo dnf install -y noctalia-git
+mark_done 8
+fi
 
 # =============================================================================
 # Step 9 - Configure environment variables
 # =============================================================================
-if [[ "$SHELL_CHOICE" == "bash" ]]; then
-  step "9 - Configuring environment variables"
+if pending 9; then
+step "9 - Configuring session environment variables"
 
-  # Write ~/.bash_profile block (idempotent check)
-  if grep -q 'QT_QPA_PLATFORM' ~/.bash_profile 2>/dev/null; then
-    warn "Wayland block already present in ~/.bash_profile - skipping"
-  else
-    cat >> ~/.bash_profile << 'EOF'
-
-# Wayland / Qt / GTK environment
-export QT_WAYLAND_DISABLE_WINDOWDECORATION=1
-export ELECTRON_OZONE_PLATFORM_HINT=auto
-export QT_QPA_PLATFORMTHEME=gtk3
-export QT_QPA_PLATFORM=wayland
-EOF
-    info "Environment block written to ~/.bash_profile"
-  fi
+if grep -q 'QT_QPA_PLATFORM' /etc/environment 2>/dev/null; then
+  warn "Session env block already present in /etc/environment - skipping"
 else
-  info "Skipping step 9 (fish selected - env vars already in ~/.config/fish/config.fish)"
+  sudo tee -a /etc/environment > /dev/null << 'EOF'
+# Wayland / Qt / GTK environment
+QT_WAYLAND_DISABLE_WINDOWDECORATION=1
+ELECTRON_OZONE_PLATFORM_HINT=auto
+QT_QPA_PLATFORMTHEME=gtk3
+QT_QPA_PLATFORM=wayland
+
+# Open Nautilus faster in niri
+GSK_RENDERER=gl
+EOF
+  info "Session environment variables written to /etc/environment"
+fi
+mark_done 9
 fi
 
 # =============================================================================
-# Step 11 - Configure kitty
+# Step 10 - Configure kitty
 # =============================================================================
-step "11 - Configuring kitty"
+if pending 10; then
+step "10 - Configuring kitty"
 mkdir -p ~/.config/kitty
 
 cat > ~/.config/kitty/kitty.conf << 'EOF'
@@ -1001,28 +1008,45 @@ if [[ "$GPU_VENDOR" == "nvidia" ]]; then
   sudo akmods --force
   sudo dracut --force
 
-  if grep -q '__GLX_VENDOR_LIBRARY_NAME' /etc/environment 2>/dev/null; then
+  if grep -q '__GL_SHADER_DISK_CACHE_SKIP_CLEANUP' /etc/environment 2>/dev/null; then
     warn "NVIDIA environment block already present in /etc/environment - skipping"
   else
-    # Common to every NVIDIA branch
+    # Shader cache + Proton tweaks
     sudo tee -a /etc/environment > /dev/null << 'EOF'
+# Nvidia shader cache: skip cleanup on launch (prevents stutter spikes)
 __GL_SHADER_DISK_CACHE_SKIP_CLEANUP=1
-__GL_ALLOW_UNOFFICIAL_PROTOCOL=1
-__GLX_VENDOR_LIBRARY_NAME=nvidia
-NVIDIA_DRIVER_CAPABILITIES=all
-GSK_RENDERER=gl
+# Fixes Steam stuttering after 25-30+ minutes of play
 LD_PRELOAD=""
 EOF
-    # Modern-only: NVDEC-backed VAAPI and Proton NVAPI make sense only on the current branch
+    # Proton features make sense only on the current (Turing+) branch
     if [[ "$NVIDIA_BRANCH" == "current" ]]; then
       sudo tee -a /etc/environment > /dev/null << 'EOF'
-LIBVA_DRIVER_NAME=nvidia
+# Force Proton to use native Wayland rendering path
 PROTON_ENABLE_WAYLAND=1
+# Enables NVAPI for features like DLSS in Proton
 PROTON_ENABLE_NVAPI=1
-NVD_BACKEND=direct
 EOF
     fi
     info "NVIDIA environment variables written to /etc/environment"
+  fi
+
+  # Video decode: on a hybrid laptop, route VA-API through the Intel iGPU.
+  if $HAS_INTEL_IGPU; then
+    sudo dnf install -y intel-media-driver
+    if grep -q 'LIBVA_DRIVER_NAME' /etc/environment 2>/dev/null; then
+      warn "LIBVA_DRIVER_NAME already present in /etc/environment - skipping"
+    else
+      echo 'LIBVA_DRIVER_NAME=iHD' | sudo tee -a /etc/environment > /dev/null
+      info "Hybrid: video decode routed to Intel iGPU (LIBVA_DRIVER_NAME=iHD)"
+    fi
+  else
+    sudo dnf install -y libva-nvidia-driver
+    if grep -q 'LIBVA_DRIVER_NAME' /etc/environment 2>/dev/null; then
+      warn "LIBVA_DRIVER_NAME already present in /etc/environment - skipping"
+    else
+      echo 'LIBVA_DRIVER_NAME=nvidia' | sudo tee -a /etc/environment > /dev/null
+      info "NVIDIA-only: VA-API bridged to NVDEC (libva-nvidia-driver, LIBVA_DRIVER_NAME=nvidia)"
+    fi
   fi
 
   # niri-specific: cap the NVIDIA free buffer pool so VRAM usage stays low
