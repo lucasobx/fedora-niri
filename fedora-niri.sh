@@ -233,35 +233,56 @@ divider
 echo -e "  Keyboard:      ${KBD_LABEL}"
 echo -e "  Logitech K380: ${OPT_K380}"
 echo -e "  Display:       scale ${EDP_SCALE}"
-echo -e "  DNF opt:       qbittorrent=${OPT_QBITTORRENT} steam=${OPT_STEAM} obs=${OPT_OBS} distrobox=${OPT_DISTROBOX} docker=${OPT_DOCKER} neovim=${OPT_NEOVIM} emacs=${OPT_EMACS}"
+echo -e "  DNF opt:       qbittorrent=${OPT_QBITTORRENT} steam=${OPT_STEAM} obs=${OPT_OBS} distrobox=${OPT_DISTROBOX} docker=${OPT_DOCKER} neovim=${OPT_NEOVIM} emacs=${OPT_EMACS} gamemode=${OPT_GAMEMODE}"
 echo -e "  Flatpak opt:   telegram=${OPT_TELEGRAM} heroic=${OPT_HEROIC} spotify=${OPT_SPOTIFY} bottles=${OPT_BOTTLES} protonplus=${OPT_PROTONPLUS} gearlever=${OPT_GEARLEVER} resources=${OPT_RESOURCES}"
-echo -e "  Video player:  $(if $OPT_VLC; then echo "vlc (flatpak)"; else echo "totem (dnf)"; fi)"
-echo -e "  Graphics:      $(if [[ "$GPU_VENDOR" == "nvidia" ]]; then echo "nvidia (${NVIDIA_BRANCH})"; else echo "$GPU_VENDOR"; fi)"
+echo -e "  Video player:  vlc (flatpak)"
+echo -e "  Graphics:      $(if [[ "$GPU_VENDOR" == "nvidia" ]]; then echo "nvidia (${NVIDIA_BRANCH})$(if $HAS_INTEL_IGPU; then echo " + intel igpu"; fi)"; else echo "$GPU_VENDOR"; fi)"
 echo -e "  Shell:         ${SHELL_CHOICE}"
 echo -e "  Git identity:  ${OPT_GIT} $(if $OPT_GIT; then echo "${GIT_NAME} <${GIT_EMAIL}>"; fi)"
 echo -e "  Remove LibreOffice: ${OPT_REMOVE_LIBREOFFICE}"
 echo ""
+
+  # Persist every answer so a resumed run does not ask again.
+  declare -p \
+    OPT_QBITTORRENT OPT_OBS OPT_DISTROBOX OPT_DOCKER OPT_NEOVIM OPT_EMACS \
+    OPT_STEAM OPT_GAMEMODE OPT_BOTTLES OPT_GEARLEVER OPT_RESOURCES OPT_HEROIC \
+    OPT_PROTONPLUS OPT_TELEGRAM OPT_SPOTIFY OPT_K380 OPT_REMOVE_LIBREOFFICE \
+    KBD_LAYOUT KBD_VARIANT KBD_LABEL EDP_SCALE OPT_GIT GIT_NAME GIT_EMAIL \
+    SHELL_CHOICE GPU_VENDOR HAS_INTEL_IGPU NVIDIA_BRANCH > "$ANSWERS"
+  info "Answers saved to $ANSWERS"
+fi
+
 ask_yn "Proceed?" || { echo "Aborted."; exit 0; }
 
 # =============================================================================
 # Step 1 - Enable RPM Fusion repositories
 # =============================================================================
+if pending 1; then
 step "1 - Enabling RPM Fusion repositories"
 
 sudo dnf install -y "https://download1.rpmfusion.org/free/fedora/rpmfusion-free-release-$(rpm -E %fedora).noarch.rpm"
 sudo dnf install -y "https://download1.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-$(rpm -E %fedora).noarch.rpm"
 sudo dnf update -y
+mark_done 1
+fi
 
 # =============================================================================
 # Step 2 - Swap ffmpeg-free for ffmpeg full
 # =============================================================================
+if pending 2; then
 step "2 - Swapping ffmpeg-free for ffmpeg full"
 
 sudo dnf swap -y ffmpeg-free ffmpeg --allowerasing
 
+sudo dnf group install -y multimedia
+info "multimedia group installed (extra codecs, HEIF/HEVC, aptX)"
+mark_done 2
+fi
+
 # =============================================================================
 # Step 3 - Remove unwanted pre-installed packages
 # =============================================================================
+if pending 3; then
 step "3 - Removing unwanted pre-installed packages"
 
 if $OPT_REMOVE_LIBREOFFICE; then
