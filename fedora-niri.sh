@@ -108,37 +108,24 @@ divider
 
 # --- Optional Packages ---
 echo -e "\n${BOLD}DNF packages:${RESET}"
-OPT_QBITTORRENT=false; ask_yn "Install qBittorrent?" && OPT_QBITTORRENT=true || true
-OPT_OBS=false;         ask_yn "Install OBS Studio?"  && OPT_OBS=true         || true
-OPT_DISTROBOX=false;   ask_yn "Install Distrobox?"   && OPT_DISTROBOX=true   || true
-OPT_DOCKER=false;      ask_yn "Install Docker?"      && OPT_DOCKER=true      || true
-OPT_NEOVIM=false;      ask_yn "Install Neovim?"      && OPT_NEOVIM=true      || true
-OPT_EMACS=false;       ask_yn "Install Emacs?"       && OPT_EMACS=true       || true
-OPT_STEAM=false;       ask_yn "Install Steam?"       && OPT_STEAM=true       || true
+OPT_GAMEMODE=false;    ask_yn "GameMode + MangoHud?" && OPT_GAMEMODE=true    || true
+OPT_QBITTORRENT=false; ask_yn "qBittorrent?"         && OPT_QBITTORRENT=true || true
+OPT_OBS=false;         ask_yn "OBS Studio?"          && OPT_OBS=true         || true
+OPT_DISTROBOX=false;   ask_yn "Distrobox?"           && OPT_DISTROBOX=true   || true
+OPT_DOCKER=false;      ask_yn "Docker?"              && OPT_DOCKER=true      || true
+OPT_NEOVIM=false;      ask_yn "Neovim?"              && OPT_NEOVIM=true      || true
+OPT_EMACS=false;       ask_yn "Emacs?"               && OPT_EMACS=true       || true
+OPT_STEAM=false;       ask_yn "Steam?"               && OPT_STEAM=true       || true
 
 # --- Optional Flatpaks ---
 echo -e "\n${BOLD}Flatpak packages:${RESET}"
-OPT_BOTTLES=false;    ask_yn "Install Bottles? (Windows apps via Wine)" && OPT_BOTTLES=true    || true
-OPT_GEARLEVER=false;  ask_yn "Install Gear Lever? (AppImage manager)"   && OPT_GEARLEVER=true  || true
-OPT_RESOURCES=false;  ask_yn "Install Resources? (System monitor)"      && OPT_RESOURCES=true  || true
-OPT_HEROIC=false;     ask_yn "Install Heroic Games Launcher?"           && OPT_HEROIC=true     || true
-OPT_PROTONPLUS=false; ask_yn "Install ProtonPlus?"                      && OPT_PROTONPLUS=true || true
-OPT_TELEGRAM=false;   ask_yn "Install Telegram?"                        && OPT_TELEGRAM=true   || true
-OPT_SPOTIFY=false;    ask_yn "Install Spotify?"                         && OPT_SPOTIFY=true    || true
-
-# --- Video player ---
-echo -e "\n${BOLD}Video player:${RESET}"
-echo "    1) VLC"
-echo "    2) GNOME Videos"
-OPT_VLC=false; OPT_TOTEM=false
-while true; do
-  read -rp "  Select video player [1/2]: " _vid_choice
-  case "$_vid_choice" in
-    1) OPT_VLC=true;   break ;;
-    2) OPT_TOTEM=true; break ;;
-    *) echo "    Please enter 1 or 2." ;;
-  esac
-done
+OPT_GEARLEVER=false;  ask_yn "Gear Lever? (appimage manager)" && OPT_GEARLEVER=true  || true
+OPT_RESOURCES=false;  ask_yn "Resources? (system monitor)"    && OPT_RESOURCES=true  || true
+OPT_BOTTLES=false;    ask_yn "Bottles? (wine front-end)"      && OPT_BOTTLES=true    || true
+OPT_HEROIC=false;     ask_yn "Heroic Games Launcher?"         && OPT_HEROIC=true     || true
+OPT_PROTONPLUS=false; ask_yn "ProtonPlus?"                    && OPT_PROTONPLUS=true || true
+OPT_TELEGRAM=false;   ask_yn "Telegram?"                      && OPT_TELEGRAM=true   || true
+OPT_SPOTIFY=false;    ask_yn "Spotify?"                       && OPT_SPOTIFY=true    || true
 
 # --- Graphics drivers (auto-detected) ---
 echo -e "\n${BOLD}Graphics drivers:${RESET}"
@@ -342,12 +329,12 @@ DNF_PKGS=(
   zip
 )
 
+$OPT_GAMEMODE    && DNF_PKGS+=(gamemode mangohud)
 $OPT_QBITTORRENT && DNF_PKGS+=(qbittorrent)
 $OPT_OBS         && DNF_PKGS+=(obs-studio)
 $OPT_DISTROBOX   && DNF_PKGS+=(distrobox)
 $OPT_STEAM       && DNF_PKGS+=(steam)
 $OPT_EMACS       && DNF_PKGS+=(emacs)
-$OPT_TOTEM       && DNF_PKGS+=(totem)
 
 # Enable mise COPR and add to install list
 if ! dnf copr list --enabled 2>/dev/null | grep -q "jdxcode/mise"; then
