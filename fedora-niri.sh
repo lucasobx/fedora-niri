@@ -402,13 +402,20 @@ $OPT_TELEGRAM   && FLATPAK_PKGS+=(org.telegram.desktop)
 $OPT_GEARLEVER  && FLATPAK_PKGS+=(it.mijorus.gearlever)
 $OPT_RESOURCES  && FLATPAK_PKGS+=(net.nokyan.Resources)
 $OPT_SPOTIFY    && FLATPAK_PKGS+=(com.spotify.Client)
-$OPT_VLC        && FLATPAK_PKGS+=(org.videolan.VLC)
+
+# GPU Screen Recorder: hardware-accelerated capture
+if [[ "$GPU_VENDOR" == "nvidia" || "$GPU_VENDOR" == "amd" ]]; then
+  FLATPAK_PKGS+=(com.dec05eba.gpu_screen_recorder)
+fi
 
 flatpak install -y flathub "${FLATPAK_PKGS[@]}"
+mark_done 5
+fi
 
 # =============================================================================
 # Step 6 - Configure Git (optional)
 # =============================================================================
+if pending 6; then
 if $OPT_GIT; then
   step "6 - Configuring Git"
   git config --global user.name        "$GIT_NAME"
