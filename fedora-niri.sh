@@ -40,6 +40,52 @@ ask_yn() {
 
 [[ "$EUID" -eq 0 ]] && die "Do not run this script as root. sudo will be called internally when needed."
 
+# -----------------------------------------------------------------------------
+# Checkpoint / resume
+# -----------------------------------------------------------------------------
+# Each completed step drops a marker in STATE_DIR. On restart, completed steps
+# are skipped, so an accidental close (or a failure) resumes from where it
+# stopped instead of redoing everything.
+#
+# Usage:
+#   ./fedora-niri.sh           resume (default): skip already-completed steps
+#   ./fedora-niri.sh --fresh   wipe saved state and answers, start clean
+#   ./fedora-niri.sh --help    show this help
+
+STATE_DIR="${XDG_STATE_HOME:-$HOME/.local/state}/fedora-niri"
+
+FRESH=false
+for _arg in "$@"; do
+  case "$_arg" in
+    --fresh) FRESH=true ;;
+    --help|-h)
+      sed -n '/^# Usage:/,/^# --fresh to start over\.$/p' "$0" | sed 's/^# \{0,1\}//'
+      exit 0 ;;
+    *) die "Unknown argument: $_arg (try --help)" ;;
+  esac
+done
+
+$FRESH && rm -rf "$STATE_DIR"
+mkdir -p "$STATE_DIR"
+
+# pending <id>: return 0 (run it) if not yet completed, 1 (skip) if done.
+pending() {
+  if [[ -e "$STATE_DIR/$1.done" ]]; then
+    info "Step $1 already completed — skipping"
+    return 1
+  fi
+  return 0
+}
+mark_done() { touch "$STATE_DIR/$1.done"; }
+
+# If resuming (any markers already present and not --fresh), say so up front.
+if ! $FRESH; then
+  _done_count=$(find "$STATE_DIR" -maxdepth 1 -name '*.done' 2>/dev/null | wc -l)
+  if [[ "$_done_count" -gt 0 ]]; then
+    info "Resuming — $_done_count step(s) already completed will be skipped (use --fresh to start over)"
+  fi
+fi
+
 # Keep sudo session alive during script execution
 sudo -v
 while true; do sudo -v; sleep 60; done &
@@ -49,6 +95,12 @@ trap 'kill "$_SUDO_PID" 2>/dev/null' EXIT
 # =============================================================================
 # Collect all user choices upfront, before any installation begins
 # =============================================================================
+ANSWERS="$STATE_DIR/answers.env"
+if [[ -f "$ANSWERS" ]]; then
+  info "Restoring previous answers from a prior run"
+  # shellcheck disable=SC1090
+  source "$ANSWERS"
+else
 
 divider
 echo -e "${BOLD} Optional packages - make your choices before we begin${RESET}"
@@ -264,10 +316,13 @@ sudo dnf remove -y \
 # Remove unwanted third-party repositories
 sudo rm -f /etc/yum.repos.d/google-chrome.repo
 sudo dnf copr remove -y phracek/PyCharm || true
+mark_done 3
+fi
 
 # =============================================================================
 # Step 4 - Install DNF packages
 # =============================================================================
+if pending 4; then
 step "4 - Installing DNF packages"
 
 DNF_PKGS=(
@@ -315,16 +370,20 @@ sudo dnf install -y "${DNF_PKGS[@]}"
 step "Installing pipx"
 sudo dnf install -y pipx
 pipx ensurepath
+mark_done 4
+fi
 
 # =============================================================================
 # Step 5 - Install Flatpaks
 # =============================================================================
+if pending 5; then
 step "5 - Installing Flatpaks"
 
 FLATPAK_PKGS=(
   page.codeberg.libre_menu_editor.LibreMenuEditor
   org.localsend.localsend_app
   io.github.kolunmi.Bazaar
+  org.videolan.VLC
 )
 
 $OPT_HEROIC     && FLATPAK_PKGS+=(com.heroicgameslauncher.hgl)
@@ -354,10 +413,13 @@ if $OPT_GIT; then
 else
   info "Skipping step 6 (Git configuration not requested)"
 fi
+mark_done 6
+fi
 
 # =============================================================================
 # Step 7 - Configure shell
 # =============================================================================
+if pending 7; then
 if [[ "$SHELL_CHOICE" == "bash" ]]; then
   step "7 - Configuring ~/.bashrc"
 
@@ -402,10 +464,13 @@ end
 EOF
   info "fish installed, set as default shell, and ~/.config/fish/config.fish written"
 fi
+mark_done 7
+fi
 
 # =============================================================================
 # Step 8 - Install niri and noctalia-shell
 # =============================================================================
+if pending 8; then
 step "8 - Installing niri and noctalia-shell"
 
 if ! dnf copr list --enabled 2>/dev/null | grep -q "yalter/niri"; then
@@ -474,12 +539,15 @@ font_size 12
 EOF
 
 info "~/.config/kitty/kitty.conf created"
+mark_done 10
+fi
 
 # =============================================================================
-# Step 12 - Configure neovim (optional)
+# Step 11 - Configure neovim (optional)
 # =============================================================================
+if pending 11; then
 if $OPT_NEOVIM; then
-  step "12 - Configuring neovim"
+  step "11 - Configuring neovim"
   sudo dnf install -y neovim
   mkdir -p ~/.config/nvim
 
@@ -514,22 +582,28 @@ vim.opt.undofile = true
 EOF
   info "Neovim config written to ~/.config/nvim/init.lua"
 else
-  info "Skipping step 12 (neovim not requested)"
+  info "Skipping step 11 (neovim not requested)"
+fi
+mark_done 11
 fi
 
 # =============================================================================
-# Step 13 - Install wallpapers
+# Step 12 - Install wallpapers
 # =============================================================================
-step "13 - Installing wallpapers"
+if pending 12; then
+step "12 - Installing wallpapers"
 
 mkdir -p ~/Pictures
 mv ~/fedora-niri/Wallpapers ~/Pictures/Wallpapers
 info "Wallpapers installed to ~/Pictures/Wallpapers"
+mark_done 12
+fi
 
 # =============================================================================
-# Step 14 - Configure noctalia and niri
+# Step 13 - Configure noctalia and niri
 # =============================================================================
-step "14 - Configuring noctalia and niri"
+if pending 13; then
+step "13 - Configuring noctalia and niri"
 
 mkdir -p ~/.local/state/noctalia
 mv ~/fedora-local/settings.toml ~/.local/state/noctalia/
@@ -778,20 +852,26 @@ binds {
 EOF
 
 info "~/.config/niri/config.kdl created"
+mark_done 13
+fi
 
 # =============================================================================
-# Step 15 - Configure MIME handling
+# Step 14 - Configure MIME handling
 # =============================================================================
+if pending 14; then
 
 # Ensure ~/.config/mimeapps.list exists as a file (never a directory)
 [[ -d ~/.config/mimeapps.list ]] && rm -rf ~/.config/mimeapps.list
 touch ~/.config/mimeapps.list
 info "~/.config/mimeapps.list ensured as an empty file"
+mark_done 14
+fi
 
 # =============================================================================
-# Step 16 - Install and configure Numix icons + themes
+# Step 15 - Install and configure Numix icons + themes
 # =============================================================================
-step "16 - Installing Numix icons and configuring themes"
+if pending 15; then
+step "15 - Installing Numix icons and configuring themes"
 
 _NUMIX_TMP="$(mktemp -d)"
 cd "$_NUMIX_TMP"
@@ -831,12 +911,15 @@ info "Nautilus default sort order set to Type"
 gsettings set org.gnome.desktop.privacy remember-recent-files false
 rm -f ~/.local/share/recently-used.xbel
 info "GNOME File History disabled and cleared"
+mark_done 15
+fi
 
 # =============================================================================
-# Step 17 - Install Docker (optional)
+# Step 16 - Install Docker (optional)
 # =============================================================================
+if pending 16; then
 if $OPT_DOCKER; then
-  step "17 - Installing Docker"
+  step "16 - Installing Docker"
   sudo dnf config-manager addrepo \
     --from-repofile https://download.docker.com/linux/fedora/docker-ce.repo
   sudo dnf install -y \
@@ -959,7 +1042,7 @@ EOF
   info "NVIDIA drivers take effect after the final reboot - verify then with: nvidia-smi"
 
 elif [[ "$GPU_VENDOR" == "intel" ]]; then
-  step "20 - Installing Intel media driver (VAAPI)"
+  step "18 - Installing Intel media driver (VAAPI)"
   sudo dnf install -y intel-media-driver
 
   if grep -q 'LIBVA_DRIVER_NAME' /etc/environment 2>/dev/null; then
@@ -970,7 +1053,7 @@ elif [[ "$GPU_VENDOR" == "intel" ]]; then
   fi
 
 elif [[ "$GPU_VENDOR" == "amd" ]]; then
-  step "20 - Configuring AMD graphics (Mesa + VA-API)"
+  step "18 - Configuring AMD graphics (Mesa + VA-API)"
   if rpm -q mesa-va-drivers-freeworld > /dev/null 2>&1; then
     warn "mesa-va-drivers-freeworld already installed - skipping VA swap"
   else
@@ -984,14 +1067,17 @@ elif [[ "$GPU_VENDOR" == "amd" ]]; then
   info "AMD: amdgpu + Mesa in use; VA/VDPAU drivers swapped to freeworld for full hardware video decode"
 
 else
-  info "Skipping step 20 (no supported GPU detected)"
+  info "Skipping step 18 (no supported GPU detected)"
+fi
+mark_done 18
 fi
 
 # =============================================================================
-# Step 21 - Configure Logitech K380 function keys (optional)
+# Step 19 - Configure Logitech K380 function keys (optional)
 # =============================================================================
+if pending 19; then
 if $OPT_K380; then
-  step "21 - Configuring Logitech K380 function keys"
+  step "19 - Configuring Logitech K380 function keys"
   _K380_TMP="$(mktemp -d)"
   curl -fsSL -o "$_K380_TMP/k380.zip" \
     https://github.com/jergusg/k380-function-keys-conf/archive/refs/tags/v1.1.zip
@@ -1014,13 +1100,16 @@ if $OPT_K380; then
 
   rm -rf "$_K380_TMP"
 else
-  info "Skipping step 21 (Logitech K380 not requested)"
+  info "Skipping step 19 (Logitech K380 not requested)"
+fi
+mark_done 19
 fi
 
 # =============================================================================
-# Step 22 - System update, cleanup, and reboot
+# Step 20 - System update, cleanup, and reboot
 # =============================================================================
-step "22 - System update and cleanup"
+if pending 20; then
+step "20 - System update and cleanup"
 sudo dnf upgrade -y
 sudo dnf remove -y rygel firefox
 sudo dnf clean all
@@ -1041,3 +1130,5 @@ if $OPT_GIT; then
   echo ""
 fi
 ask_yn "Reboot now?" && sudo reboot || echo -e "\n  Reboot skipped. Remember to reboot before starting niri."
+mark_done 20
+fi
