@@ -2,8 +2,9 @@
 # =============================================================================
 # Fedora 44 + Niri + Noctalia-shell
 # =============================================================================
-# usage:
-# chmod +x fedora-niri.sh && ./fedora-niri.sh
+# Run interactively; every step runs now, in order, in this one process.
+#   ./fedora-niri.sh          run everything
+#   ./fedora-niri.sh --fresh  wipe saved state/answers and start clean
 # =============================================================================
 
 set -euo pipefail
@@ -11,12 +12,16 @@ set -euo pipefail
 # -----------------------------------------------------------------------------
 # Helpers
 # -----------------------------------------------------------------------------
-BOLD='\033[1m'
-GREEN='\033[0;32m'
-YELLOW='\033[0;33m'
-CYAN='\033[0;36m'
-RED='\033[0;31m'
-RESET='\033[0m'
+if [[ -t 1 ]]; then
+  BOLD='\033[1m'
+  GREEN='\033[0;32m'
+  YELLOW='\033[0;33m'
+  CYAN='\033[0;36m'
+  RED='\033[0;31m'
+  RESET='\033[0m'
+else
+  BOLD='' GREEN='' YELLOW='' CYAN='' RED='' RESET=''
+fi
 
 step()    { echo -e "\n${BOLD}${GREEN}==>${RESET}${BOLD} $*${RESET}"; }
 info()    { echo -e "  ${CYAN}>${RESET} $*"; }
@@ -38,236 +43,295 @@ ask_yn() {
   done
 }
 
-[[ "$EUID" -eq 0 ]] && die "Do not run this script as root. sudo will be called internally when needed."
-
 # -----------------------------------------------------------------------------
-# Checkpoint / resume
+# Argument parsing
 # -----------------------------------------------------------------------------
-# Each completed step drops a marker in STATE_DIR. On restart, completed steps
-# are skipped, so an accidental close (or a failure) resumes from where it
-# stopped instead of redoing everything.
-#
-# Usage:
-#   ./fedora-niri.sh           resume (default): skip already-completed steps
-#   ./fedora-niri.sh --fresh   wipe saved state and answers, start clean
-#   ./fedora-niri.sh --help    show this help
-
-STATE_DIR="${XDG_STATE_HOME:-$HOME/.local/state}/fedora-niri"
-
 FRESH=false
 for _arg in "$@"; do
   case "$_arg" in
-    --fresh) FRESH=true ;;
+    --fresh)   FRESH=true ;;
     --help|-h)
-      sed -n '/^# Usage:/,/^# --fresh to start over\.$/p' "$0" | sed 's/^# \{0,1\}//'
+      cat <<'HELP'
+Usage:
+  ./fedora-niri.sh          run everything now, interactively
+  ./fedora-niri.sh --fresh  wipe saved state/answers and start clean
+  ./fedora-niri.sh --help   show this help
+HELP
       exit 0 ;;
     *) die "Unknown argument: $_arg (try --help)" ;;
   esac
 done
 
-$FRESH && rm -rf "$STATE_DIR"
+if [[ "$EUID" -eq 0 ]]; then
+  die "Do not run this as root - run it as your normal user; it uses sudo where needed."
+fi
+
+# -----------------------------------------------------------------------------
+# Shared locations and step state
+# -----------------------------------------------------------------------------
+STATE_DIR="${XDG_STATE_HOME:-$HOME/.local/state}/fedora-niri"
+ANSWERS="$STATE_DIR/answers.env"
+
+if $FRESH; then rm -rf "$STATE_DIR"; fi
 mkdir -p "$STATE_DIR"
 
-# pending <id>: return 0 (run it) if not yet completed, 1 (skip) if done.
+# pending <id>: returns 0 (run) if this step is not yet done, 1 (skip) if it is.
 pending() {
   if [[ -e "$STATE_DIR/$1.done" ]]; then
-    info "Step $1 already completed — skipping"
+    info "Step $1 already completed - skipping"
     return 1
   fi
   return 0
 }
 mark_done() { touch "$STATE_DIR/$1.done"; }
 
-# If resuming (any markers already present and not --fresh), say so up front.
 if ! $FRESH; then
   _done_count=$(find "$STATE_DIR" -maxdepth 1 -name '*.done' 2>/dev/null | wc -l)
   if [[ "$_done_count" -gt 0 ]]; then
-    info "Resuming — $_done_count step(s) already completed will be skipped (use --fresh to start over)"
+    info "Resuming - $_done_count step(s) already completed will be skipped (use --fresh to start over)"
   fi
 fi
 
-# Keep sudo session alive during script execution
+# -----------------------------------------------------------------------------
+# Network gate and setup-time preflight
+# -----------------------------------------------------------------------------
+_require_network() {
+  info "Waiting for network before the heavy install..."
+  if command -v nm-online &>/dev/null; then nm-online -q -t 60 || true; fi
+  local i
+  for ((i=1; i<=30; i++)); do
+    if getent hosts mirrors.fedoraproject.org &>/dev/null; then
+      info "Network is up."
+      return 0
+    fi
+    sleep 3
+  done
+  die "No network after ~150s; aborting - fix network and re-run."
+}
+
+# -----------------------------------------------------------------------------
+# Temp root + cleanup
+# -----------------------------------------------------------------------------
+TMP_ROOT="$(mktemp -d)"
 sudo -v
 while true; do sudo -v; sleep 60; done &
 _SUDO_PID=$!
-trap 'kill "$_SUDO_PID" 2>/dev/null' EXIT
+_cleanup() {
+  trap - EXIT INT TERM
+  if [[ -n "${_SUDO_PID:-}" ]]; then kill "$_SUDO_PID" 2>/dev/null || true; fi
+  if [[ -n "${TMP_ROOT:-}" ]]; then rm -rf "$TMP_ROOT" 2>/dev/null || true; fi
+}
+trap '_cleanup' EXIT
+trap '_cleanup; exit 130' INT
+trap '_cleanup; exit 143' TERM
 
-# =============================================================================
-# Collect all user choices upfront, before any installation begins
-# =============================================================================
-ANSWERS="$STATE_DIR/answers.env"
-if [[ -f "$ANSWERS" ]]; then
-  info "Restoring previous answers from a prior run"
-  # shellcheck disable=SC1090
-  source "$ANSWERS"
-else
-
-divider
-echo -e "${BOLD} Optional packages - make your choices before we begin${RESET}"
-divider
-
-# --- Optional Packages ---
-echo -e "\n${BOLD}DNF packages:${RESET}"
-OPT_GAMEMODE=false;    ask_yn "GameMode + MangoHud?" && OPT_GAMEMODE=true    || true
-OPT_QBITTORRENT=false; ask_yn "qBittorrent?"         && OPT_QBITTORRENT=true || true
-OPT_OBS=false;         ask_yn "OBS Studio?"          && OPT_OBS=true         || true
-OPT_DISTROBOX=false;   ask_yn "Distrobox?"           && OPT_DISTROBOX=true   || true
-OPT_DOCKER=false;      ask_yn "Docker?"              && OPT_DOCKER=true      || true
-OPT_NEOVIM=false;      ask_yn "Neovim?"              && OPT_NEOVIM=true      || true
-OPT_EMACS=false;       ask_yn "Emacs?"               && OPT_EMACS=true       || true
-OPT_STEAM=false;       ask_yn "Steam?"               && OPT_STEAM=true       || true
-
-# --- Optional Flatpaks ---
-echo -e "\n${BOLD}Flatpak packages:${RESET}"
-OPT_GEARLEVER=false;  ask_yn "Gear Lever? (appimage manager)" && OPT_GEARLEVER=true  || true
-OPT_RESOURCES=false;  ask_yn "Resources? (system monitor)"    && OPT_RESOURCES=true  || true
-OPT_BOTTLES=false;    ask_yn "Bottles? (wine front-end)"      && OPT_BOTTLES=true    || true
-OPT_HEROIC=false;     ask_yn "Heroic Games Launcher?"         && OPT_HEROIC=true     || true
-OPT_PROTONPLUS=false; ask_yn "ProtonPlus?"                    && OPT_PROTONPLUS=true || true
-OPT_TELEGRAM=false;   ask_yn "Telegram?"                      && OPT_TELEGRAM=true   || true
-OPT_SPOTIFY=false;    ask_yn "Spotify?"                       && OPT_SPOTIFY=true    || true
-
-# --- Graphics drivers (auto-detected) ---
-echo -e "\n${BOLD}Graphics drivers:${RESET}"
-_GPU_IDS=""
-for _d in /sys/bus/pci/devices/*; do
-  _cls="$(cat "$_d/class" 2>/dev/null)" || continue
-  case "$_cls" in 0x0300*|0x0302*|0x0380*) ;; *) continue ;; esac
-  _ven="$(cat "$_d/vendor" 2>/dev/null)" || continue
-  _GPU_IDS="$_GPU_IDS $_ven"
-done
-
-# NVIDIA takes priority on hybrid (Intel + NVIDIA) laptops
-GPU_VENDOR="none"
-case " $_GPU_IDS " in
-  *" 0x10de "*) GPU_VENDOR="nvidia" ;;
-  *" 0x1002 "*) GPU_VENDOR="amd"    ;;
-  *" 0x8086 "*) GPU_VENDOR="intel"  ;;
-esac
-info "Detected GPU vendor: ${GPU_VENDOR}"
-
-# Detect an Intel iGPU independently of the primary vendor
-HAS_INTEL_IGPU=false
-case " $_GPU_IDS " in
-  *" 0x8086 "*) HAS_INTEL_IGPU=true ;;
-esac
-if [[ "$GPU_VENDOR" == "nvidia" ]] && $HAS_INTEL_IGPU; then
-  info "Hybrid GPU detected: Intel iGPU + NVIDIA dGPU"
-fi
-
-NVIDIA_BRANCH=""
-if [[ "$GPU_VENDOR" == "nvidia" ]]; then
-  _NV_NAME="$(lspci -nn 2>/dev/null | grep -Ei 'vga|3d|display' | grep -i nvidia | head -n1 | sed -E 's/.*: //')" || true
-  if [[ -n "${_NV_NAME:-}" ]]; then echo -e "  Detected card: ${_NV_NAME}"; fi
-  echo -e "${BOLD}  NVIDIA driver branch:${RESET}"
-  echo "    1) Current - Turing (GTX 16 / RTX 20) and newer"
-  echo "    2) Legacy 580xx - Maxwell / Pascal (GeForce 900 and 10 series)"
-  while true; do
-    read -rp "  Select NVIDIA branch [1/2]: " _nv_choice
-    case "$_nv_choice" in
-      1) NVIDIA_BRANCH="current"; break ;;
-      2) NVIDIA_BRANCH="580xx";   break ;;
-      *) echo "    Please enter 1 or 2." ;;
-    esac
-  done
-fi
-
-# --- Keyboard layout ---
-echo -e "\n${BOLD}Keyboard layout:${RESET}"
-echo "    1) International (us/intl)"
-echo "    2) ABNT (br)"
-while true; do
-  read -rp "  Select keyboard layout [1/2]: " _kbd_choice
-  case "$_kbd_choice" in
-    1) KBD_LAYOUT="us"; KBD_VARIANT='variant "intl"'; KBD_LABEL="International"; break ;;
-    2) KBD_LAYOUT="br"; KBD_VARIANT="";               KBD_LABEL="ABNT";          break ;;
-    *) echo "    Please enter 1 or 2." ;;
-  esac
-done
-
-# --- Logitech K380 ---
-echo -e "\n${BOLD}Logitech K380:${RESET}"
-OPT_K380=false; ask_yn "Do you own a Logitech K380 keyboard? (enable standard F keys)" && OPT_K380=true || true
-
-# --- Display ---
-echo "  Display scale:"
-echo "    1) 100%"
-echo "    2) 125%"
-echo "    3) 133%"
-echo "    4) 150%"
-echo "    5) 166%"
-echo "    6) 200%"
-while true; do
-  read -rp "  Select scale [1/2/3/4/5/6]: " _scale_choice
-  case "$_scale_choice" in
-    1) EDP_SCALE="1";        break ;;
-    2) EDP_SCALE="1.25";     break ;;
-    3) EDP_SCALE="1.333333"; break ;;
-    4) EDP_SCALE="1.5";      break ;;
-    5) EDP_SCALE="1.666667"; break ;;
-    6) EDP_SCALE="2";        break ;;
-    *) echo "    Please enter 1 through 6." ;;
-  esac
-done
-
-# --- Git Identity (optional) ---
-echo -e "\n${BOLD}Git configuration:${RESET}"
-OPT_GIT=false; ask_yn "Configure Git identity?" && OPT_GIT=true || true
-GIT_NAME=""; GIT_EMAIL=""
-if $OPT_GIT; then
-  read -rp "  Full name for git: " GIT_NAME
-  read -rp "  Email for git: "     GIT_EMAIL
-fi
-
-# --- Shell ---
-echo -e "\n${BOLD}Shell:${RESET}"
-echo "    1) bash (keep as default)"
-echo "    2) fish"
-while true; do
-  read -rp "  Select shell [1/2]: " _shell_choice
-  case "$_shell_choice" in
-    1) SHELL_CHOICE="bash"; break ;;
-    2) SHELL_CHOICE="fish"; break ;;
-    *) echo "    Please enter 1 or 2." ;;
-  esac
-done
-
-# --- Remove LibreOffice? ---
-echo -e "\n${BOLD}LibreOffice removal:${RESET}"
-OPT_REMOVE_LIBREOFFICE=false; ask_yn "Remove LibreOffice (pre-installed)?" && OPT_REMOVE_LIBREOFFICE=true || true
-
-divider
-echo -e "${BOLD}  Summary - the following will be installed/configured${RESET}"
-divider
-echo -e "  Keyboard:      ${KBD_LABEL}"
-echo -e "  Logitech K380: ${OPT_K380}"
-echo -e "  Display:       scale ${EDP_SCALE}"
-echo -e "  DNF opt:       qbittorrent=${OPT_QBITTORRENT} steam=${OPT_STEAM} obs=${OPT_OBS} distrobox=${OPT_DISTROBOX} docker=${OPT_DOCKER} neovim=${OPT_NEOVIM} emacs=${OPT_EMACS} gamemode=${OPT_GAMEMODE}"
-echo -e "  Flatpak opt:   telegram=${OPT_TELEGRAM} heroic=${OPT_HEROIC} spotify=${OPT_SPOTIFY} bottles=${OPT_BOTTLES} protonplus=${OPT_PROTONPLUS} gearlever=${OPT_GEARLEVER} resources=${OPT_RESOURCES}"
-echo -e "  Video player:  vlc (flatpak)"
-echo -e "  Graphics:      $(if [[ "$GPU_VENDOR" == "nvidia" ]]; then echo "nvidia (${NVIDIA_BRANCH})$(if $HAS_INTEL_IGPU; then echo " + intel igpu"; fi)"; else echo "$GPU_VENDOR"; fi)"
-echo -e "  Shell:         ${SHELL_CHOICE}"
-echo -e "  Git identity:  ${OPT_GIT} $(if $OPT_GIT; then echo "${GIT_NAME} <${GIT_EMAIL}>"; fi)"
-echo -e "  Remove LibreOffice: ${OPT_REMOVE_LIBREOFFICE}"
-echo ""
-
-  # Persist every answer so a resumed run does not ask again.
+# -----------------------------------------------------------------------------
+# Answers: collect / save / stage
+# -----------------------------------------------------------------------------
+save_answers() {
   declare -p \
     OPT_QBITTORRENT OPT_OBS OPT_DISTROBOX OPT_DOCKER OPT_NEOVIM OPT_EMACS \
     OPT_STEAM OPT_GAMEMODE OPT_BOTTLES OPT_GEARLEVER OPT_RESOURCES OPT_HEROIC \
     OPT_PROTONPLUS OPT_TELEGRAM OPT_SPOTIFY OPT_K380 OPT_REMOVE_LIBREOFFICE \
     KBD_LAYOUT KBD_VARIANT KBD_LABEL EDP_SCALE OPT_GIT GIT_NAME GIT_EMAIL \
-    SHELL_CHOICE GPU_VENDOR HAS_INTEL_IGPU NVIDIA_BRANCH > "$ANSWERS"
+    SHELL_CHOICE GPU_VENDOR HAS_INTEL_IGPU NVIDIA_BRANCH TARGET_USER > "$1"
+}
+
+collect_answers() {
+  TARGET_USER="$USER"
+
+  divider
+  echo -e "${BOLD} Optional packages - make your choices before we begin${RESET}"
+  divider
+
+  # --- Optional Packages ---
+  echo -e "\n${BOLD}DNF packages:${RESET}"
+  OPT_GAMEMODE=false;    ask_yn "GameMode + MangoHud?" && OPT_GAMEMODE=true    || true
+  OPT_QBITTORRENT=false; ask_yn "qBittorrent?"         && OPT_QBITTORRENT=true || true
+  OPT_OBS=false;         ask_yn "OBS Studio?"          && OPT_OBS=true         || true
+  OPT_DISTROBOX=false;   ask_yn "Distrobox?"           && OPT_DISTROBOX=true   || true
+  OPT_DOCKER=false;      ask_yn "Docker?"              && OPT_DOCKER=true      || true
+  OPT_NEOVIM=false;      ask_yn "Neovim?"              && OPT_NEOVIM=true      || true
+  OPT_EMACS=false;       ask_yn "Emacs?"               && OPT_EMACS=true       || true
+  OPT_STEAM=false;       ask_yn "Steam?"               && OPT_STEAM=true       || true
+
+  # --- Optional Flatpaks ---
+  echo -e "\n${BOLD}Flatpak packages:${RESET}"
+  OPT_GEARLEVER=false;  ask_yn "Gear Lever? (appimage manager)" && OPT_GEARLEVER=true  || true
+  OPT_RESOURCES=false;  ask_yn "Resources? (system monitor)"    && OPT_RESOURCES=true  || true
+  OPT_BOTTLES=false;    ask_yn "Bottles? (wine front-end)"      && OPT_BOTTLES=true    || true
+  OPT_HEROIC=false;     ask_yn "Heroic Games Launcher?"         && OPT_HEROIC=true     || true
+  OPT_PROTONPLUS=false; ask_yn "ProtonPlus?"                    && OPT_PROTONPLUS=true || true
+  OPT_TELEGRAM=false;   ask_yn "Telegram?"                      && OPT_TELEGRAM=true   || true
+  OPT_SPOTIFY=false;    ask_yn "Spotify?"                       && OPT_SPOTIFY=true    || true
+
+  # --- Graphics drivers (auto-detected) ---
+  echo -e "\n${BOLD}Graphics drivers:${RESET}"
+  _GPU_IDS=""
+  for _d in /sys/bus/pci/devices/*; do
+    _cls="$(cat "$_d/class" 2>/dev/null)" || continue
+    case "$_cls" in 0x0300*|0x0302*|0x0380*) ;; *) continue ;; esac
+    _ven="$(cat "$_d/vendor" 2>/dev/null)" || continue
+    _GPU_IDS="$_GPU_IDS $_ven"
+  done
+
+  # NVIDIA takes priority on hybrid (Intel + NVIDIA) laptops
+  GPU_VENDOR="none"
+  case " $_GPU_IDS " in
+    *" 0x10de "*) GPU_VENDOR="nvidia" ;;
+    *" 0x1002 "*) GPU_VENDOR="amd"    ;;
+    *" 0x8086 "*) GPU_VENDOR="intel"  ;;
+  esac
+  info "Detected GPU vendor: ${GPU_VENDOR}"
+
+  # Detect an Intel iGPU independently of the primary vendor
+  HAS_INTEL_IGPU=false
+  case " $_GPU_IDS " in
+    *" 0x8086 "*) HAS_INTEL_IGPU=true ;;
+  esac
+  if [[ "$GPU_VENDOR" == "nvidia" ]] && $HAS_INTEL_IGPU; then
+    info "Hybrid GPU detected: Intel iGPU + NVIDIA dGPU"
+  fi
+
+  NVIDIA_BRANCH=""
+  if [[ "$GPU_VENDOR" == "nvidia" ]]; then
+    _NV_NAME="$(lspci -nn 2>/dev/null | grep -Ei 'vga|3d|display' | grep -i nvidia | head -n1 | sed -E 's/.*: //')" || true
+    if [[ -n "${_NV_NAME:-}" ]]; then echo -e "  Detected card: ${_NV_NAME}"; fi
+    echo -e "${BOLD}  NVIDIA driver branch:${RESET}"
+    echo "    1) Current - Turing (GTX 16 / RTX 20) and newer"
+    echo "    2) Legacy 580xx - Maxwell / Pascal (GeForce 900 and 10 series)"
+    while true; do
+      read -rp "  Select NVIDIA branch [1/2]: " _nv_choice
+      case "$_nv_choice" in
+        1) NVIDIA_BRANCH="current"; break ;;
+        2) NVIDIA_BRANCH="580xx";   break ;;
+        *) echo "    Please enter 1 or 2." ;;
+      esac
+    done
+  fi
+
+  # --- Keyboard layout ---
+  echo -e "\n${BOLD}Keyboard layout:${RESET}"
+  echo "    1) International (us/intl)"
+  echo "    2) ABNT (br)"
+  while true; do
+    read -rp "  Select keyboard layout [1/2]: " _kbd_choice
+    case "$_kbd_choice" in
+      1) KBD_LAYOUT="us"; KBD_VARIANT='variant "intl"'; KBD_LABEL="International"; break ;;
+      2) KBD_LAYOUT="br"; KBD_VARIANT="";               KBD_LABEL="ABNT";          break ;;
+      *) echo "    Please enter 1 or 2." ;;
+    esac
+  done
+
+  # --- Logitech K380 ---
+  echo -e "\n${BOLD}Logitech K380:${RESET}"
+  OPT_K380=false; ask_yn "Do you own a Logitech K380 keyboard? (enable standard F keys)" && OPT_K380=true || true
+
+  # --- Display ---
+  echo "  Display scale:"
+  echo "    1) 100%"
+  echo "    2) 125%"
+  echo "    3) 133%"
+  echo "    4) 150%"
+  echo "    5) 166%"
+  echo "    6) 200%"
+  while true; do
+    read -rp "  Select scale [1/2/3/4/5/6]: " _scale_choice
+    case "$_scale_choice" in
+      1) EDP_SCALE="1";        break ;;
+      2) EDP_SCALE="1.25";     break ;;
+      3) EDP_SCALE="1.333333"; break ;;
+      4) EDP_SCALE="1.5";      break ;;
+      5) EDP_SCALE="1.666667"; break ;;
+      6) EDP_SCALE="2";        break ;;
+      *) echo "    Please enter 1 through 6." ;;
+    esac
+  done
+
+  # --- Git Identity (optional) ---
+  echo -e "\n${BOLD}Git configuration:${RESET}"
+  OPT_GIT=false; ask_yn "Configure Git identity?" && OPT_GIT=true || true
+  GIT_NAME=""; GIT_EMAIL=""
+  if $OPT_GIT; then
+    read -rp "  Full name for git: " GIT_NAME
+    read -rp "  Email for git: "     GIT_EMAIL
+  fi
+
+  # --- Shell ---
+  echo -e "\n${BOLD}Shell:${RESET}"
+  echo "    1) bash (keep as default)"
+  echo "    2) fish"
+  while true; do
+    read -rp "  Select shell [1/2]: " _shell_choice
+    case "$_shell_choice" in
+      1) SHELL_CHOICE="bash"; break ;;
+      2) SHELL_CHOICE="fish"; break ;;
+      *) echo "    Please enter 1 or 2." ;;
+    esac
+  done
+
+  # --- Remove LibreOffice? ---
+  echo -e "\n${BOLD}LibreOffice removal:${RESET}"
+  OPT_REMOVE_LIBREOFFICE=false; ask_yn "Remove LibreOffice (pre-installed)?" && OPT_REMOVE_LIBREOFFICE=true || true
+
+  divider
+  echo -e "${BOLD}  Summary - the following will be installed/configured${RESET}"
+  divider
+  echo -e "  Keyboard:      ${KBD_LABEL}"
+  echo -e "  Logitech K380: ${OPT_K380}"
+  echo -e "  Display:       scale ${EDP_SCALE}"
+  echo -e "  DNF opt:       qbittorrent=${OPT_QBITTORRENT} steam=${OPT_STEAM} obs=${OPT_OBS} distrobox=${OPT_DISTROBOX} docker=${OPT_DOCKER} neovim=${OPT_NEOVIM} emacs=${OPT_EMACS} gamemode=${OPT_GAMEMODE}"
+  echo -e "  Flatpak opt:   telegram=${OPT_TELEGRAM} heroic=${OPT_HEROIC} spotify=${OPT_SPOTIFY} bottles=${OPT_BOTTLES} protonplus=${OPT_PROTONPLUS} gearlever=${OPT_GEARLEVER} resources=${OPT_RESOURCES}"
+  echo -e "  Video player:  vlc (flatpak)"
+  echo -e "  Graphics:      $(if [[ "$GPU_VENDOR" == "nvidia" ]]; then echo "nvidia (${NVIDIA_BRANCH})$(if $HAS_INTEL_IGPU; then echo " + intel igpu"; fi)"; else echo "$GPU_VENDOR"; fi)"
+  echo -e "  Shell:         ${SHELL_CHOICE}"
+  echo -e "  Git identity:  ${OPT_GIT} $(if $OPT_GIT; then echo "${GIT_NAME} <${GIT_EMAIL}>"; fi)"
+  echo -e "  Remove LibreOffice: ${OPT_REMOVE_LIBREOFFICE}"
+  echo ""
+  ask_yn "Proceed?" || { echo "Aborted."; exit 0; }
+}
+
+# -----------------------------------------------------------------------------
+# Answers: reuse a prior run's, or collect and save them
+# -----------------------------------------------------------------------------
+_require_network
+if [[ -f "$ANSWERS" ]]; then
+  info "Restoring previous answers from a prior run"
+  # shellcheck disable=SC1090
+  source "$ANSWERS"
+else
+  collect_answers
+  _atmp="$(mktemp -p "$STATE_DIR" .answers.XXXXXX)"
+  save_answers "$_atmp"
+  mv -f "$_atmp" "$ANSWERS"
   info "Answers saved to $ANSWERS"
 fi
 
-ask_yn "Proceed?" || { echo "Aborted."; exit 0; }
-
 # =============================================================================
-# Step 1 - Enable RPM Fusion repositories
+# Step 1 - Enable third-party software, Flathub, and RPM Fusion
 # =============================================================================
 if pending 1; then
-step "1 - Enabling RPM Fusion repositories"
+step "1 - Enabling third-party software, Flathub, and RPM Fusion"
+
+# Fetch packages in parallel
+if grep -q '^max_parallel_downloads' /etc/dnf/dnf.conf; then
+  warn "max_parallel_downloads already set in /etc/dnf/dnf.conf - skipping"
+else
+  echo 'max_parallel_downloads=10' | sudo tee -a /etc/dnf/dnf.conf > /dev/null
+  info "max_parallel_downloads=10 added to /etc/dnf/dnf.conf"
+fi
+
+# Enable Fedora's third-party repositories
+if command -v fedora-third-party &>/dev/null; then
+  sudo fedora-third-party enable
+  info "Fedora third-party repositories enabled"
+else
+  warn "fedora-third-party not found; skipping (is this Fedora Workstation?)"
+fi
+
+# Ensure the Flathub remote exists (step 5 installs from it)
+sudo flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
+info "Flathub remote ensured"
 
 sudo dnf install -y "https://download1.rpmfusion.org/free/fedora/rpmfusion-free-release-$(rpm -E %fedora).noarch.rpm"
 sudo dnf install -y "https://download1.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-$(rpm -E %fedora).noarch.rpm"
@@ -276,12 +340,16 @@ mark_done 1
 fi
 
 # =============================================================================
-# Step 2 - Swap ffmpeg-free for ffmpeg full
+# Step 2 - Swap ffmpeg-free for ffmpeg full and install multimedia codecs
 # =============================================================================
 if pending 2; then
-step "2 - Swapping ffmpeg-free for ffmpeg full"
+step "2 - Swapping ffmpeg-free for ffmpeg full and installing multimedia codecs"
 
-sudo dnf swap -y ffmpeg-free ffmpeg --allowerasing
+if rpm -q ffmpeg-free &>/dev/null; then
+  sudo dnf swap -y ffmpeg-free ffmpeg --allowerasing
+else
+  info "ffmpeg (full) already in place; skipping swap"
+fi
 
 sudo dnf group install -y multimedia
 info "multimedia group installed (extra codecs, HEIF/HEVC, aptX)"
@@ -345,6 +413,7 @@ step "4 - Installing DNF packages"
 DNF_PKGS=(
   google-noto-emoji-fonts
   google-noto-fonts-all
+  pipewire-codec-aptx
   adw-gtk3-theme
   gnome-tweaks
   wf-recorder
@@ -382,11 +451,13 @@ else
 fi
 DNF_PKGS+=(zen-browser)
 
-sudo dnf install -y "${DNF_PKGS[@]}"
+# Lower CPU/I/O priority for this large transaction so the end-of-transaction
+# file triggers don't starve the graphical compositor and freeze the session
+sudo nice -n 19 ionice -c 3 dnf install -y "${DNF_PKGS[@]}"
 
-step "Installing pipx"
 sudo dnf install -y pipx
 pipx ensurepath
+info "Base packages and pipx installed"
 mark_done 4
 fi
 
@@ -417,7 +488,7 @@ if [[ "$GPU_VENDOR" == "nvidia" || "$GPU_VENDOR" == "amd" ]]; then
   FLATPAK_PKGS+=(com.dec05eba.gpu_screen_recorder)
 fi
 
-flatpak install -y flathub "${FLATPAK_PKGS[@]}"
+sudo flatpak install -y flathub "${FLATPAK_PKGS[@]}"
 mark_done 5
 fi
 
@@ -468,8 +539,11 @@ EOF
 else
   step "7 - Installing and configuring fish shell"
   sudo dnf install -y fish
-  command -v fish | sudo tee -a /etc/shells
-  chsh -s "$(command -v fish)"
+  _FISH_BIN="$(command -v fish)"
+  if ! grep -qxF "$_FISH_BIN" /etc/shells; then
+    echo "$_FISH_BIN" | sudo tee -a /etc/shells > /dev/null
+  fi
+  sudo chsh -s "$_FISH_BIN" "$TARGET_USER"
   mkdir -p ~/.config/fish
   cat > ~/.config/fish/config.fish << 'EOF'
 fish_add_path $HOME/.local/bin $HOME/bin
@@ -516,18 +590,15 @@ fi
 if pending 9; then
 step "9 - Configuring session environment variables"
 
-if grep -q 'QT_QPA_PLATFORM' /etc/environment 2>/dev/null; then
+if grep -q 'GSK_RENDERER=gl' /etc/environment 2>/dev/null; then
   warn "Session env block already present in /etc/environment - skipping"
 else
   sudo tee -a /etc/environment > /dev/null << 'EOF'
-# Wayland / Qt / GTK environment
-QT_WAYLAND_DISABLE_WINDOWDECORATION=1
-ELECTRON_OZONE_PLATFORM_HINT=auto
-QT_QPA_PLATFORMTHEME=gtk3
-QT_QPA_PLATFORM=wayland
-
-# Open Nautilus faster in niri
+# Keep GTK4 on the OpenGL renderer (opens Nautilus faster in niri)
 GSK_RENDERER=gl
+
+# Toolkit variables (Qt/Electron/GTK) live in the niri config's environment
+# block instead, so they only apply inside the graphical session.
 EOF
   info "Session environment variables written to /etc/environment"
 fi
@@ -616,7 +687,7 @@ if pending 12; then
 step "12 - Installing wallpapers"
 
 mkdir -p ~/Pictures
-mv ~/fedora-niri/Wallpapers ~/Pictures/Wallpapers
+[[ -d ~/fedora-niri/Wallpapers ]] && mv ~/fedora-niri/Wallpapers ~/Pictures/Wallpapers
 info "Wallpapers installed to ~/Pictures/Wallpapers"
 mark_done 12
 fi
@@ -628,7 +699,7 @@ if pending 13; then
 step "13 - Configuring noctalia and niri"
 
 mkdir -p ~/.local/state/noctalia
-mv ~/fedora-local/settings.toml ~/.local/state/noctalia/
+[[ -f ~/fedora-niri/settings.toml ]] && mv ~/fedora-niri/settings.toml ~/.local/state/noctalia/
 info "Noctalia settings moved to ~/.local/state/noctalia"
 
 mkdir -p ~/.config/niri
@@ -703,6 +774,13 @@ spawn-at-startup "noctalia"
 
 prefer-no-csd
 
+environment {
+  QT_QPA_PLATFORM "wayland"
+  QT_QPA_PLATFORMTHEME "gtk3"
+  QT_WAYLAND_DISABLE_WINDOWDECORATION "1"
+  ELECTRON_OZONE_PLATFORM_HINT "auto"
+}
+
 hotkey-overlay {
   skip-at-startup
 }
@@ -727,12 +805,7 @@ window-rule {
 }
 
 window-rule {
-  match app-id=r#"^org\.wezfurlong\.wezterm$"#
-  default-column-width {}
-}
-
-window-rule {
-  match app-id=r#"firefox$"# title="^Picture-in-Picture$"
+  match app-id=r#"zen$"# title="^Picture-in-Picture$"
   open-floating true
 }
 
@@ -895,31 +968,36 @@ fi
 if pending 15; then
 step "15 - Installing Numix icons and configuring themes"
 
-_NUMIX_TMP="$(mktemp -d)"
-cd "$_NUMIX_TMP"
+_NUMIX_TMP="$(mktemp -d -p "$TMP_ROOT")"
 
-git clone https://github.com/numixproject/numix-icon-theme
-git clone https://github.com/numixproject/numix-icon-theme-circle
-git clone https://github.com/numixproject/numix-folders
+# Clone and install inside a subshell so the cwd change never leaks out.
+(
+  cd "$_NUMIX_TMP"
+  git clone https://github.com/numixproject/numix-icon-theme
+  git clone https://github.com/numixproject/numix-icon-theme-circle
+  git clone https://github.com/numixproject/numix-folders
 
-sudo mv numix-icon-theme/Numix /usr/share/icons/
-sudo mv numix-icon-theme/Numix-Light /usr/share/icons/
-sudo mv numix-icon-theme-circle/Numix-Circle /usr/share/icons/
-sudo mv numix-icon-theme-circle/Numix-Circle-Light /usr/share/icons/
-sudo mv numix-folders /usr/share/icons/
+  # Remove any prior copies first so a re-run after a partial failure lands the
+  # themes cleanly instead of nesting them (e.g. /usr/share/icons/Numix/Numix).
+  sudo rm -rf /usr/share/icons/Numix \
+              /usr/share/icons/Numix-Light \
+              /usr/share/icons/Numix-Circle \
+              /usr/share/icons/Numix-Circle-Light \
+              /usr/share/icons/numix-folders
 
-rm -rf numix-icon-theme numix-icon-theme-circle
-
-cd ~
+  sudo mv numix-icon-theme/Numix /usr/share/icons/
+  sudo mv numix-icon-theme/Numix-Light /usr/share/icons/
+  sudo mv numix-icon-theme-circle/Numix-Circle /usr/share/icons/
+  sudo mv numix-icon-theme-circle/Numix-Circle-Light /usr/share/icons/
+  sudo mv numix-folders /usr/share/icons/
+)
 rm -rf "$_NUMIX_TMP"
+
+( cd /usr/share/icons/numix-folders && printf '5\ngrey\n' | sudo ./numix-folders -t )
+info "numix-folders configured (style 5, grey)"
 
 gsettings set org.gnome.desktop.interface icon-theme "Numix-Circle"
 info "Icon theme set to Numix-Circle"
-
-cd /usr/share/icons/numix-folders
-printf '5\ngrey\n' | sudo ./numix-folders -t
-cd ~
-info "numix-folders configured (style 5, grey)"
 
 gsettings set org.gnome.desktop.interface color-scheme "prefer-dark"
 info "Color scheme set to prefer-dark"
@@ -951,9 +1029,9 @@ if $OPT_DOCKER; then
     docker-buildx-plugin \
     docker-compose-plugin
   sudo systemctl enable --now docker
-  sudo usermod -aG docker "$USER"
+  sudo usermod -aG docker "$TARGET_USER"
   info "Docker installed, service enabled and started"
-  info "User '$USER' added to the docker group (takes effect after next login)"
+  info "User '$TARGET_USER' added to the docker group (takes effect after next login)"
 else
   info "Skipping step 16 (Docker not requested)"
 fi
@@ -961,14 +1039,65 @@ mark_done 16
 fi
 
 # =============================================================================
-# Step 17 - Disable split-lock mitigation
+# Step 17 - Kernel tuning (sysctl)
 # =============================================================================
 if pending 17; then
-step "17 - Disabling split-lock mitigation"
-echo 'kernel.split_lock_mitigate=0' | sudo tee /etc/sysctl.d/99-splitlock.conf > /dev/null
-sudo sysctl -p /etc/sysctl.d/99-splitlock.conf
-info "Split-lock mitigation disabled (/etc/sysctl.d/99-splitlock.conf)"
+step "17 - Applying kernel tuning"
+sudo tee /etc/sysctl.d/99-local-tuning.conf > /dev/null << 'EOF'
+# Split-lock mitigation stalls the whole machine when an app triggers it.
+kernel.split_lock_mitigate=0
+
+# Allow SysRq. When a driver wedges the session, Alt+SysRq+REISUB syncs
+# the disks and reboots cleanly instead of forcing a power cut.
+kernel.sysrq=1
+
+# File watchers: LSP servers, Emacs and build tools run out of the stock
+# limits on large trees.
+fs.inotify.max_user_instances=8192
+fs.inotify.max_user_watches=524288
+EOF
+sudo sysctl -p /etc/sysctl.d/99-local-tuning.conf > /dev/null
+# Drop the file the old split-lock-only step used to write, so the values are
+# not defined twice.
+sudo rm -f /etc/sysctl.d/99-splitlock.conf
+info "Kernel tuning applied (/etc/sysctl.d/99-local-tuning.conf)"
 mark_done 17
+fi
+
+# =============================================================================
+# Step 17b - Disable audio device auto-suspend (WirePlumber)
+# =============================================================================
+if pending 17b; then
+step "17b - Disabling audio device auto-suspend"
+# Stop WirePlumber from suspending idle ALSA nodes. Auto-suspend is what causes
+# the audible pop/click and the clipped first ~200ms when a sink/source wakes
+# (common on DACs, HDMI audio, and many onboard codecs).
+sudo mkdir -p /etc/wireplumber/wireplumber.conf.d
+sudo tee /etc/wireplumber/wireplumber.conf.d/51-disable-suspension.conf > /dev/null << 'EOF'
+monitor.alsa.rules = [
+  {
+    matches = [
+      {
+        # Matches all sources
+        node.name = "~alsa_input.*"
+      },
+      {
+        # Matches all sinks
+        node.name = "~alsa_output.*"
+      }
+    ]
+    actions = {
+      update-props = {
+        session.suspend-timeout-seconds = 0
+      }
+    }
+  }
+]
+EOF
+# Apply now if a user WirePlumber is running; otherwise it takes effect at login.
+systemctl --user restart wireplumber 2>/dev/null || true
+info "Audio auto-suspend disabled (/etc/wireplumber/wireplumber.conf.d/51-disable-suspension.conf)"
+mark_done 17b
 fi
 
 # =============================================================================
@@ -986,12 +1115,46 @@ if [[ "$GPU_VENDOR" == "nvidia" ]]; then
   # Enable DRM kernel mode setting (required for Wayland)
   echo 'options nvidia_drm modeset=1 fbdev=1' | sudo tee /etc/modprobe.d/nvidia-drm-modeset.conf > /dev/null
 
-  # Early-load the NVIDIA modules
-  printf 'nvidia\nnvidia_modeset\nnvidia_uvm\nnvidia_drm\n' | sudo tee /etc/modules-load.d/nvidia.conf > /dev/null
+  # TemporaryFilePath  - where VRAM is dumped on suspend. The default is /tmp,
+  #                      which is tmpfs on Fedora: several GB of VRAM would be
+  #                      written into RAM. /var/tmp is real storage.
+  # PageAttributeTable - lets the driver use PAT for memory mapping instead of
+  #                      the slower MTRR path.
+  sudo tee /etc/modprobe.d/nvidia-local.conf > /dev/null << 'EOF'
+options nvidia NVreg_TemporaryFilePath=/var/tmp
+options nvidia NVreg_UsePageAttributeTable=1
+EOF
 
-  # Build the kernel module now and regenerate the initramfs, so no mid-install reboot is needed
+  # Early-load from the initramfs, NOT via /etc/modules-load.d
+  # Verify with: sudo ausearch -m avc -c nv_queue -ts boot # expected: no matches
+  sudo tee /etc/dracut.conf.d/nvidia.conf > /dev/null << 'EOF'
+add_drivers+=" nvidia nvidia_modeset nvidia_uvm nvidia_drm "
+EOF
+  # Drop any stale modules-load.d file from an older run of this script so the
+  # modules are not also loaded the AVC-triggering way.
+  sudo rm -f /etc/modules-load.d/nvidia.conf
+
   sudo akmods --force
   sudo dracut --force
+
+  # Redundant with the modprobe.d drop-in above, but kept as a safety net: if an
+  # update ever regenerates the initramfs without it, the modeset is lost.
+  if ! grep -q 'nvidia-drm.modeset=1' /proc/cmdline; then
+    sudo grubby --update-kernel=ALL --args='nvidia-drm.modeset=1'
+    info "nvidia-drm.modeset=1 added to the kernel command line (grubby)"
+  else
+    info "nvidia-drm.modeset=1 already on the kernel command line - skipping"
+  fi
+
+  # Without these the GPU state is not saved/restored across suspend and
+  # hibernate, which shows up as corruption or a hang on resume.
+  for _svc in nvidia-suspend.service nvidia-resume.service nvidia-hibernate.service; do
+    if systemctl cat "$_svc" &>/dev/null; then
+      sudo systemctl enable "$_svc" &>/dev/null && info "$_svc enabled" || warn "Could not enable $_svc"
+    else
+      warn "$_svc not found - skipping"
+    fi
+  done
 
   if grep -q '__GL_SHADER_DISK_CACHE_SKIP_CLEANUP' /etc/environment 2>/dev/null; then
     warn "NVIDIA environment block already present in /etc/environment - skipping"
@@ -1033,6 +1196,18 @@ EOF
       info "NVIDIA-only: VA-API bridged to NVDEC (libva-nvidia-driver, LIBVA_DRIVER_NAME=nvidia)"
     fi
   fi
+
+  # If the GPU resets, kill the process that caused it; if VRAM was lost, restart
+  # the display manager. Turns a full lockup into a session restart.
+  sudo tee /etc/udev/rules.d/80-gpu-reset.rules > /dev/null << 'EOF'
+# If a GPU crash is caused by a specific process, kill the PID
+ACTION=="change", ENV{DEVNAME}=="/dev/dri/card0", ENV{RESET}=="1", ENV{PID}!="0", RUN+="/sbin/kill -9 %E{PID}"
+
+# Restart the display manager if the GPU crashes and VRAM is lost
+ACTION=="change", ENV{DEVNAME}=="/dev/dri/card0", ENV{RESET}=="1", ENV{FLAGS}=="1", RUN+="/usr/sbin/systemctl restart gdm"
+EOF
+  sudo udevadm control --reload-rules 2>/dev/null || true
+  info "GPU reset recovery rule written to /etc/udev/rules.d/80-gpu-reset.rules"
 
   # niri-specific: cap the NVIDIA free buffer pool so VRAM usage stays low
   # (https://niri-wm.github.io/niri/Nvidia.html#high-vram-usage-fix)
@@ -1102,8 +1277,8 @@ fi
 if pending 19; then
 if $OPT_K380; then
   step "19 - Configuring Logitech K380 function keys"
-  _K380_TMP="$(mktemp -d)"
-  curl -fsSL -o "$_K380_TMP/k380.zip" \
+  _K380_TMP="$(mktemp -d -p "$TMP_ROOT")"
+  curl -fsSL --retry 3 --retry-delay 2 -o "$_K380_TMP/k380.zip" \
     https://github.com/jergusg/k380-function-keys-conf/archive/refs/tags/v1.1.zip
   unzip -q "$_K380_TMP/k380.zip" -d "$_K380_TMP"
   _K380_DIR="$_K380_TMP/k380-function-keys-conf-1.1"
@@ -1130,7 +1305,7 @@ mark_done 19
 fi
 
 # =============================================================================
-# Step 20 - System update, cleanup, and reboot
+# Step 20 - System update and cleanup
 # =============================================================================
 if pending 20; then
 step "20 - System update and cleanup"
@@ -1138,6 +1313,8 @@ sudo dnf upgrade -y
 sudo dnf remove -y rygel firefox
 sudo dnf clean all
 sudo dnf autoremove -y
+mark_done 20
+fi
 
 # =============================================================================
 # Done
@@ -1146,6 +1323,9 @@ divider
 echo -e "${BOLD}${GREEN}  Setup complete${RESET}"
 divider
 echo ""
+
+rm -rf "$STATE_DIR"
+
 if $OPT_GIT; then
   echo -e "${BOLD}  Git / SSH:${RESET}"
   echo -e "  Git was configured for: ${GIT_NAME} <${GIT_EMAIL}>"
@@ -1153,6 +1333,5 @@ if $OPT_GIT; then
   echo -e "    ${CYAN}ssh-keygen -t ed25519 -C \"${GIT_EMAIL}\"${RESET}"
   echo ""
 fi
+info "Log out and pick the niri session to start using it."
 ask_yn "Reboot now?" && sudo reboot || echo -e "\n  Reboot skipped. Remember to reboot before starting niri."
-mark_done 20
-fi
