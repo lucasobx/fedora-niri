@@ -31,15 +31,7 @@ During installation:
 - Select `Fedora Workstation`
 - Enable `C Development Tools and Libraries` and `Development Tools`
 
-## 2. Enable third-party repositories and update
-
-After the first boot, open **GNOME Software**, enable `Third Party Software Repositories`, then run:
-
-```bash
-sudo dnf upgrade
-```
-
-## 3. Clone and run the setup script
+## 2. Clone and run the setup script
 
 ```bash
 git clone https://github.com/lucasobx/fedora-niri.git ~/fedora-niri
@@ -141,13 +133,13 @@ A full list is in `~/.config/niri/config.kdl`.
 # Optional
 
 ## Applications
-- **VLC** or **Totem** (GNOME Videos)
 - OBS Studio
 - Gear Lever
 - Resources
 - qBittorrent
 - Telegram
 - Spotify
+- VLC
 
 ### Gaming
 - Steam
