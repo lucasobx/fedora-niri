@@ -637,6 +637,7 @@ if pending 11; then
 if $OPT_NEOVIM; then
   step "11 - Configuring neovim"
   sudo dnf install -y neovim
+  sudo rm -r /usr/share/applications/nvim.desktop
   mkdir -p ~/.config/nvim
 
   cat > ~/.config/nvim/init.lua << 'EOF'
