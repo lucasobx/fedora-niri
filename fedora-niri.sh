@@ -69,6 +69,13 @@ fi
 # -----------------------------------------------------------------------------
 # Shared locations and step state
 # -----------------------------------------------------------------------------
+_SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+if [[ -d "$_SCRIPT_DIR/assets" ]]; then
+  ASSETS_DIR="$_SCRIPT_DIR/assets"
+else
+  ASSETS_DIR="$HOME/fedora-niri/assets"
+fi
+
 STATE_DIR="${XDG_STATE_HOME:-$HOME/.local/state}/fedora-niri"
 ANSWERS="$STATE_DIR/answers.env"
 
@@ -343,10 +350,44 @@ mark_done 2
 fi
 
 # =============================================================================
-# Step 3 - Remove unwanted pre-installed packages
+# Step 3 - Configure Logitech K380 function keys (optional)
 # =============================================================================
 if pending 3; then
-step "3 - Removing unwanted pre-installed packages"
+if $OPT_K380; then
+  step "3 - Configuring Logitech K380 function keys"
+  _K380_TMP="$(mktemp -d -p "$TMP_ROOT")"
+  curl -fsSL --retry 3 --retry-delay 2 -o "$_K380_TMP/k380.zip" \
+    https://github.com/jergusg/k380-function-keys-conf/archive/refs/tags/v1.1.zip
+  unzip -q "$_K380_TMP/k380.zip" -d "$_K380_TMP"
+  _K380_DIR="$_K380_TMP/k380-function-keys-conf-1.1"
+  chmod +x "$_K380_DIR"/*.sh 2>/dev/null || true
+
+  ( cd "$_K380_DIR" && sudo make install && sudo make reload )
+  info "k380_conf installed and udev rule registered (persists across reconnects)"
+
+  _K380_DEV="$( { (cd "$_K380_DIR" && sudo ./fn_on.sh 2>&1 || true) | grep -oE 'hidraw[0-9]+' | head -n1; } || true )"
+  if [[ -n "$_K380_DEV" ]]; then
+    if sudo k380_conf -d "/dev/$_K380_DEV" -f on; then
+      info "F keys enabled on /dev/$_K380_DEV"
+    else
+      warn "k380_conf failed; reconnect the keyboard to apply automatically"
+    fi
+  else
+    info "K380 not connected now; F keys will be enabled automatically when it connects"
+  fi
+
+  rm -rf "$_K380_TMP"
+else
+  info "Skipping step 3 (Logitech K380 not requested)"
+fi
+mark_done 3
+fi
+
+# =============================================================================
+# Step 4 - Remove unwanted pre-installed packages
+# =============================================================================
+if pending 4; then
+step "4 - Removing unwanted pre-installed packages"
 
 if $OPT_REMOVE_LIBREOFFICE; then
   sudo dnf group remove -y libreoffice
@@ -388,14 +429,14 @@ sudo dnf remove -y \
 # Remove unwanted third-party repositories
 sudo rm -f /etc/yum.repos.d/google-chrome.repo
 sudo dnf copr remove -y phracek/PyCharm || true
-mark_done 3
+mark_done 4
 fi
 
 # =============================================================================
-# Step 4 - Install DNF packages
+# Step 5 - Install DNF packages
 # =============================================================================
-if pending 4; then
-step "4 - Installing DNF packages"
+if pending 5; then
+step "5 - Installing DNF packages"
 
 DNF_PKGS=(
   google-noto-emoji-fonts
@@ -442,14 +483,14 @@ DNF_PKGS+=(zen-browser)
 # file triggers don't starve the graphical compositor and freeze the session
 sudo nice -n 19 ionice -c 3 dnf install -y "${DNF_PKGS[@]}"
 info "Base packages installed"
-mark_done 4
+mark_done 5
 fi
 
 # =============================================================================
-# Step 5 - Install Flatpaks
+# Step 6 - Install Flatpaks
 # =============================================================================
-if pending 5; then
-step "5 - Installing Flatpaks"
+if pending 6; then
+step "6 - Installing Flatpaks"
 
 FLATPAK_PKGS=(
   page.codeberg.libre_menu_editor.LibreMenuEditor
@@ -473,33 +514,33 @@ if [[ "$GPU_VENDOR" == "nvidia" || "$GPU_VENDOR" == "amd" ]]; then
 fi
 
 sudo flatpak install -y flathub "${FLATPAK_PKGS[@]}"
-mark_done 5
-fi
-
-# =============================================================================
-# Step 6 - Configure Git (optional)
-# =============================================================================
-if pending 6; then
-if $OPT_GIT; then
-  step "6 - Configuring Git"
-  git config --global user.name        "$GIT_NAME"
-  git config --global user.email       "$GIT_EMAIL"
-  git config --global init.defaultBranch main
-  git config --global core.autocrlf    input
-  git config --global core.safecrlf    true
-  git config --global color.ui         true
-  info "Git configured for: ${GIT_NAME} <${GIT_EMAIL}>"
-else
-  info "Skipping step 6 (Git configuration not requested)"
-fi
 mark_done 6
 fi
 
 # =============================================================================
-# Step 7 - Configure ~/.bashrc
+# Step 7 - Configure Git (optional)
 # =============================================================================
 if pending 7; then
-step "7 - Configuring ~/.bashrc"
+if $OPT_GIT; then
+  step "7 - Configuring Git"
+  git config --global user.name "$GIT_NAME"
+  git config --global user.email "$GIT_EMAIL"
+  git config --global init.defaultBranch main
+  git config --global core.autocrlf input
+  git config --global core.safecrlf true
+  git config --global color.ui true
+  info "Git configured for: ${GIT_NAME} <${GIT_EMAIL}>"
+else
+  info "Skipping step 7 (Git configuration not requested)"
+fi
+mark_done 7
+fi
+
+# =============================================================================
+# Step 8 - Configure ~/.bashrc
+# =============================================================================
+if pending 8; then
+step "8 - Configuring ~/.bashrc"
 
 if grep -q 'export EDITOR=' ~/.bashrc; then
   warn "EDITOR/VISUAL already set in ~/.bashrc - skipping"
@@ -535,14 +576,14 @@ eval "$(zoxide init bash --cmd cd)"
 EOF
   info "Zoxide block added to ~/.bashrc"
 fi
-mark_done 7
+mark_done 8
 fi
 
 # =============================================================================
-# Step 8 - Install niri and noctalia-shell
+# Step 9 - Install niri and noctalia-shell
 # =============================================================================
-if pending 8; then
-step "8 - Installing niri and noctalia-shell"
+if pending 9; then
+step "9 - Installing niri and noctalia-shell"
 
 if ! dnf copr list --enabled 2>/dev/null | grep -q "yalter/niri"; then
   sudo dnf copr enable -y yalter/niri
@@ -559,14 +600,14 @@ fi
 sudo dnf update -y
 sudo dnf install -y niri --setopt=install_weak_deps=False
 sudo dnf install -y noctalia-git
-mark_done 8
+mark_done 9
 fi
 
 # =============================================================================
-# Step 9 - Configure environment variables
+# Step 10 - Configure environment variables
 # =============================================================================
-if pending 9; then
-step "9 - Configuring session environment variables"
+if pending 10; then
+step "10 - Configuring session environment variables"
 
 if grep -q 'GSK_RENDERER=gl' /etc/environment 2>/dev/null; then
   warn "Session env block already present in /etc/environment - skipping"
@@ -577,14 +618,14 @@ GSK_RENDERER=gl
 EOF
   info "Session environment variables written to /etc/environment"
 fi
-mark_done 9
+mark_done 10
 fi
 
 # =============================================================================
-# Step 10 - Configure kitty
+# Step 11 - Configure kitty
 # =============================================================================
-if pending 10; then
-step "10 - Configuring kitty"
+if pending 11; then
+step "11 - Configuring kitty"
 mkdir -p ~/.config/kitty
 
 cat > ~/.config/kitty/kitty.conf << 'EOF'
@@ -607,15 +648,15 @@ font_size 12
 EOF
 
 info "~/.config/kitty/kitty.conf created"
-mark_done 10
+mark_done 11
 fi
 
 # =============================================================================
-# Step 11 - Configure neovim (optional)
+# Step 12 - Configure neovim (optional)
 # =============================================================================
-if pending 11; then
+if pending 12; then
 if $OPT_NEOVIM; then
-  step "11 - Configuring neovim"
+  step "12 - Configuring neovim"
   sudo dnf install -y neovim
   sudo rm -r /usr/share/applications/nvim.desktop
   mkdir -p ~/.config/nvim
@@ -651,28 +692,28 @@ vim.opt.undofile = true
 EOF
   info "Neovim config written to ~/.config/nvim/init.lua"
 else
-  info "Skipping step 11 (neovim not requested)"
+  info "Skipping step 12 (neovim not requested)"
 fi
-mark_done 11
-fi
-
-# =============================================================================
-# Step 12 - Install wallpapers
-# =============================================================================
-if pending 12; then
-step "12 - Installing wallpapers"
-
-mkdir -p ~/Pictures
-[[ -d ~/fedora-niri/Wallpapers ]] && mv ~/fedora-niri/Wallpapers ~/Pictures/Wallpapers
-info "Wallpapers installed to ~/Pictures/Wallpapers"
 mark_done 12
 fi
 
 # =============================================================================
-# Step 13 - Configure noctalia and niri
+# Step 13 - Install wallpapers
 # =============================================================================
 if pending 13; then
-step "13 - Configuring noctalia and niri"
+step "13 - Installing wallpapers"
+
+mkdir -p ~/Pictures
+[[ -d "$ASSETS_DIR/Wallpapers" ]] && mv "$ASSETS_DIR/Wallpapers" ~/Pictures/Wallpapers
+info "Wallpapers installed to ~/Pictures/Wallpapers"
+mark_done 13
+fi
+
+# =============================================================================
+# Step 14 - Configure noctalia and niri
+# =============================================================================
+if pending 14; then
+step "14 - Configuring noctalia and niri"
 
 mkdir -p ~/.local/state/noctalia
 [[ -f ~/fedora-niri/settings.toml ]] && mv ~/fedora-niri/settings.toml ~/.local/state/noctalia/
@@ -923,26 +964,26 @@ binds {
 EOF
 
 info "~/.config/niri/config.kdl created"
-mark_done 13
+mark_done 14
 fi
 
 # =============================================================================
-# Step 14 - Configure MIME handling
+# Step 15 - Configure MIME handling
 # =============================================================================
-if pending 14; then
+if pending 15; then
 
 # Ensure ~/.config/mimeapps.list exists as a file (never a directory)
 [[ -d ~/.config/mimeapps.list ]] && rm -rf ~/.config/mimeapps.list
 touch ~/.config/mimeapps.list
 info "~/.config/mimeapps.list ensured as an empty file"
-mark_done 14
+mark_done 15
 fi
 
 # =============================================================================
-# Step 15 - Install and configure Numix icons + themes
+# Step 16 - Install and configure Numix icons + themes
 # =============================================================================
-if pending 15; then
-step "15 - Installing Numix icons and configuring themes"
+if pending 16; then
+step "16 - Installing Numix icons and configuring themes"
 
 _NUMIX_TMP="$(mktemp -d -p "$TMP_ROOT")"
 
@@ -984,15 +1025,15 @@ info "Nautilus default sort order set to Type"
 gsettings set org.gnome.desktop.privacy remember-recent-files false
 rm -f ~/.local/share/recently-used.xbel
 info "GNOME File History disabled and cleared"
-mark_done 15
+mark_done 16
 fi
 
 # =============================================================================
-# Step 16 - Install Docker (optional)
+# Step 17 - Install Docker (optional)
 # =============================================================================
-if pending 16; then
+if pending 17; then
 if $OPT_DOCKER; then
-  step "16 - Installing Docker"
+  step "17 - Installing Docker"
   sudo dnf config-manager addrepo \
     --from-repofile https://download.docker.com/linux/fedora/docker-ce.repo
   sudo dnf install -y \
@@ -1006,16 +1047,16 @@ if $OPT_DOCKER; then
   info "Docker installed, service enabled and started"
   info "User '$TARGET_USER' added to the docker group (takes effect after next login)"
 else
-  info "Skipping step 16 (Docker not requested)"
+  info "Skipping step 17 (Docker not requested)"
 fi
-mark_done 16
+mark_done 17
 fi
 
 # =============================================================================
-# Step 17 - Kernel tuning (sysctl)
+# Step 18 - Kernel tuning (sysctl)
 # =============================================================================
-if pending 17; then
-step "17 - Applying kernel tuning"
+if pending 18; then
+step "18 - Applying kernel tuning"
 sudo tee /etc/sysctl.d/99-local-tuning.conf > /dev/null << 'EOF'
 # Split-lock mitigation stalls the whole machine when an app triggers it.
 kernel.split_lock_mitigate=0
@@ -1034,14 +1075,14 @@ sudo sysctl -p /etc/sysctl.d/99-local-tuning.conf > /dev/null
 # not defined twice.
 sudo rm -f /etc/sysctl.d/99-splitlock.conf
 info "Kernel tuning applied (/etc/sysctl.d/99-local-tuning.conf)"
-mark_done 17
+mark_done 18
 fi
 
 # =============================================================================
-# Step 17b - Disable audio device auto-suspend (WirePlumber)
+# Step 19 - Disable audio device auto-suspend (WirePlumber)
 # =============================================================================
-if pending 17b; then
-step "17b - Disabling audio device auto-suspend"
+if pending 19; then
+step "19 - Disabling audio device auto-suspend"
 # Stop WirePlumber from suspending idle ALSA nodes. Auto-suspend is what causes
 # the audible pop/click and the clipped first ~200ms when a sink/source wakes
 # (common on DACs, HDMI audio, and many onboard codecs).
@@ -1070,15 +1111,15 @@ EOF
 # Apply now if a user WirePlumber is running; otherwise it takes effect at login.
 systemctl --user restart wireplumber 2>/dev/null || true
 info "Audio auto-suspend disabled (/etc/wireplumber/wireplumber.conf.d/51-disable-suspension.conf)"
-mark_done 17b
+mark_done 19
 fi
 
 # =============================================================================
-# Step 18 - Install graphics drivers
+# Step 20 - Install graphics drivers
 # =============================================================================
-if pending 18; then
+if pending 20; then
 if [[ "$GPU_VENDOR" == "nvidia" ]]; then
-  step "18 - Installing NVIDIA drivers (${NVIDIA_BRANCH}) and enabling Wayland support"
+  step "20 - Installing NVIDIA drivers (${NVIDIA_BRANCH}) and enabling Wayland support"
 
   case "$NVIDIA_BRANCH" in
     current) sudo dnf install -y akmod-nvidia xorg-x11-drv-nvidia-cuda xorg-x11-drv-nvidia-libs.i686 ;;
@@ -1214,7 +1255,7 @@ EOF
   info "NVIDIA drivers take effect after the final reboot - verify then with: nvidia-smi"
 
 elif [[ "$GPU_VENDOR" == "intel" ]]; then
-  step "18 - Installing Intel media driver (VAAPI)"
+  step "20 - Installing Intel media driver (VAAPI)"
   sudo dnf install -y intel-media-driver
 
   if grep -q 'LIBVA_DRIVER_NAME' /etc/environment 2>/dev/null; then
@@ -1225,7 +1266,7 @@ elif [[ "$GPU_VENDOR" == "intel" ]]; then
   fi
 
 elif [[ "$GPU_VENDOR" == "amd" ]]; then
-  step "18 - Configuring AMD graphics (Mesa + VA-API)"
+  step "20 - Configuring AMD graphics (Mesa + VA-API)"
   if rpm -q mesa-va-drivers-freeworld > /dev/null 2>&1; then
     warn "mesa-va-drivers-freeworld already installed - skipping VA swap"
   else
@@ -1239,54 +1280,21 @@ elif [[ "$GPU_VENDOR" == "amd" ]]; then
   info "AMD: amdgpu + Mesa in use; VA/VDPAU drivers swapped to freeworld for full hardware video decode"
 
 else
-  info "Skipping step 18 (no supported GPU detected)"
+  info "Skipping step 20 (no supported GPU detected)"
 fi
-mark_done 18
-fi
-
-# =============================================================================
-# Step 19 - Configure Logitech K380 function keys (optional)
-# =============================================================================
-if pending 19; then
-if $OPT_K380; then
-  step "19 - Configuring Logitech K380 function keys"
-  _K380_TMP="$(mktemp -d -p "$TMP_ROOT")"
-  curl -fsSL --retry 3 --retry-delay 2 -o "$_K380_TMP/k380.zip" \
-    https://github.com/jergusg/k380-function-keys-conf/archive/refs/tags/v1.1.zip
-  unzip -q "$_K380_TMP/k380.zip" -d "$_K380_TMP"
-  _K380_DIR="$_K380_TMP/k380-function-keys-conf-1.1"
-  chmod +x "$_K380_DIR"/*.sh 2>/dev/null || true
-
-  ( cd "$_K380_DIR" && sudo make install && sudo make reload )
-  info "k380_conf installed and udev rule registered (persists across reconnects)"
-
-  # Apply immediately if the keyboard is connected now
-  _K380_DEV="$( (cd "$_K380_DIR" && sudo ./fn_on.sh 2>&1 || true) | grep -oE 'hidraw[0-9]+' | head -n1)"
-  if [[ -n "$_K380_DEV" ]]; then
-    sudo k380_conf -d "/dev/$_K380_DEV" -f on \
-      && info "F keys enabled on /dev/$_K380_DEV" \
-      || warn "k380_conf failed; reconnect the keyboard to apply automatically"
-  else
-    info "K380 not connected now; F keys will be enabled automatically when it connects"
-  fi
-
-  rm -rf "$_K380_TMP"
-else
-  info "Skipping step 19 (Logitech K380 not requested)"
-fi
-mark_done 19
+mark_done 20
 fi
 
 # =============================================================================
-# Step 20 - System update and cleanup
+# Step 21 - System update and cleanup
 # =============================================================================
-if pending 20; then
-step "20 - System update and cleanup"
+if pending 21; then
+step "21 - System update and cleanup"
 sudo dnf upgrade -y
 sudo dnf remove -y rygel firefox
 sudo dnf clean all
 sudo dnf autoremove -y
-mark_done 20
+mark_done 21
 fi
 
 # =============================================================================
