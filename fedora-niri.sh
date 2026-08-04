@@ -892,10 +892,49 @@ mark_done 18
 fi
 
 # =============================================================================
-# Step 19 - Disable audio device auto-suspend (WirePlumber)
+# Step 19 - Bluetooth game controller compatibility
 # =============================================================================
 if pending 19; then
-step "19 - Disabling audio device auto-suspend"
+step "19 - Applying Bluetooth game controller fixes"
+
+sudo mkdir -p /etc/bluetooth
+sudo tee /etc/bluetooth/input.conf > /dev/null << 'EOF'
+[General]
+UserspaceHID=false
+ClassicBondedOnly=false
+EOF
+
+for _kv in "ControllerMode=dual" "Privacy=device" "FastConnectable=true" \
+           "JustWorksRepairing=confirm" "AlwaysPairable=true"; do
+  _key="${_kv%%=*}"; _val="${_kv#*=}"
+  if sudo grep -qE "^[#[:space:]]*${_key}[[:space:]]*=" /etc/bluetooth/main.conf 2>/dev/null; then
+    sudo sed -i -E "s|^[#[:space:]]*${_key}[[:space:]]*=.*|${_key} = ${_val}|" /etc/bluetooth/main.conf
+  else
+    sudo sed -i "0,/^\[General\]/s//[General]\n${_key} = ${_val}/" /etc/bluetooth/main.conf
+  fi
+done
+
+echo 'options bluetooth disable_ertm=1' | sudo tee /etc/modprobe.d/bluetooth.conf > /dev/null
+
+# Keep Bluetooth headsets on A2DP
+sudo mkdir -p /etc/wireplumber/wireplumber.conf.d
+sudo tee /etc/wireplumber/wireplumber.conf.d/51-no-headset-autoswitch.conf > /dev/null << 'EOF'
+wireplumber.settings = {
+  bluetooth.autoswitch-to-headset-profile = false
+}
+EOF
+
+sudo systemctl restart bluetooth
+systemctl --user restart wireplumber 2>/dev/null || true
+info "Bluetooth fixes applied (input.conf, main.conf, ERTM off, A2DP kept)"
+mark_done 19
+fi
+
+# =============================================================================
+# Step 20 - Disable audio device auto-suspend (WirePlumber)
+# =============================================================================
+if pending 20; then
+step "20 - Disabling audio device auto-suspend"
 # Stop WirePlumber from suspending idle ALSA nodes. Auto-suspend is what causes
 # the audible pop/click and the clipped first ~200ms when a sink/source wakes
 # (common on DACs, HDMI audio, and many onboard codecs).
@@ -924,15 +963,15 @@ EOF
 # Apply now if a user WirePlumber is running; otherwise it takes effect at login.
 systemctl --user restart wireplumber 2>/dev/null || true
 info "Audio auto-suspend disabled (/etc/wireplumber/wireplumber.conf.d/51-disable-suspension.conf)"
-mark_done 19
+mark_done 20
 fi
 
 # =============================================================================
-# Step 20 - Install graphics drivers
+# Step 21 - Install graphics drivers
 # =============================================================================
-if pending 20; then
+if pending 21; then
 if [[ "$GPU_VENDOR" == "nvidia" ]]; then
-  step "20 - Installing NVIDIA drivers (${NVIDIA_BRANCH}) and enabling Wayland support"
+  step "21 - Installing NVIDIA drivers (${NVIDIA_BRANCH}) and enabling Wayland support"
 
   case "$NVIDIA_BRANCH" in
     current) sudo dnf install -y akmod-nvidia xorg-x11-drv-nvidia-cuda xorg-x11-drv-nvidia-libs.i686 ;;
@@ -1068,7 +1107,7 @@ EOF
   info "NVIDIA drivers take effect after the final reboot - verify then with: nvidia-smi"
 
 elif [[ "$GPU_VENDOR" == "intel" ]]; then
-  step "20 - Installing Intel media driver (VAAPI)"
+  step "21 - Installing Intel media driver (VAAPI)"
   sudo dnf install -y intel-media-driver
 
   if grep -q 'LIBVA_DRIVER_NAME' /etc/environment 2>/dev/null; then
@@ -1079,7 +1118,7 @@ elif [[ "$GPU_VENDOR" == "intel" ]]; then
   fi
 
 elif [[ "$GPU_VENDOR" == "amd" ]]; then
-  step "20 - Configuring AMD graphics (Mesa + VA-API)"
+  step "21 - Configuring AMD graphics (Mesa + VA-API)"
   if rpm -q mesa-va-drivers-freeworld > /dev/null 2>&1; then
     warn "mesa-va-drivers-freeworld already installed - skipping VA swap"
   else
@@ -1093,21 +1132,21 @@ elif [[ "$GPU_VENDOR" == "amd" ]]; then
   info "AMD: amdgpu + Mesa in use; VA/VDPAU drivers swapped to freeworld for full hardware video decode"
 
 else
-  info "Skipping step 20 (no supported GPU detected)"
+  info "Skipping step 21 (no supported GPU detected)"
 fi
-mark_done 20
+mark_done 21
 fi
 
 # =============================================================================
-# Step 21 - System update and cleanup
+# Step 22 - System update and cleanup
 # =============================================================================
-if pending 21; then
-step "21 - System update and cleanup"
+if pending 22; then
+step "22 - System update and cleanup"
 sudo dnf upgrade -y
 sudo dnf remove -y rygel firefox
 sudo dnf clean all
 sudo dnf autoremove -y
-mark_done 21
+mark_done 22
 fi
 
 # =============================================================================
