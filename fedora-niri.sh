@@ -448,6 +448,7 @@ DNF_PKGS=(
   unrar
   7zip
   zip
+  vlc
 )
 
 $OPT_GAMEMODE    && DNF_PKGS+=(gamemode mangohud)
@@ -490,7 +491,6 @@ FLATPAK_PKGS=(
   page.codeberg.libre_menu_editor.LibreMenuEditor
   org.localsend.localsend_app
   io.github.kolunmi.Bazaar
-  org.videolan.VLC
 )
 
 $OPT_HEROIC     && FLATPAK_PKGS+=(com.heroicgameslauncher.hgl)
@@ -692,14 +692,21 @@ mark_done 12
 fi
 
 # =============================================================================
-# Step 13 - Install wallpapers
+# Step 13 - Set up assets
 # =============================================================================
 if pending 13; then
-step "13 - Installing wallpapers"
+step "13 - Setting up directories and assets"
 
 mkdir -p ~/Pictures
 [[ -d "$ASSETS_DIR/Wallpapers" ]] && mv "$ASSETS_DIR/Wallpapers" ~/Pictures/Wallpapers
 info "Wallpapers installed to ~/Pictures/Wallpapers"
+
+# VLC config -> ~/.config/vlc
+if [[ -d "$ASSETS_DIR/vlc" ]]; then
+  mkdir -p ~/.config
+  mv "$ASSETS_DIR/vlc" ~/.config/vlc
+  info "VLC config moved to ~/.config/vlc"
+fi
 mark_done 13
 fi
 
