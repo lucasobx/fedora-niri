@@ -15,6 +15,8 @@ Automated setup script for a clean, minimal Fedora 44 workstation built around [
 - [Graphics drivers](#graphics-drivers)
 - [Logitech K380 keyboard](#logitech-k380-keyboard)
 - [Steam H.264 codec support](#steam-h264-codec-support)
+- [Bluetooth game controllers](#bluetooth-game-controllers)
+- [Audio auto-suspend](#audio-auto-suspend)
 - [Keyboard shortcuts](#keyboard-shortcuts)
 - [Installed by default](#installed-by-default)
 - [Optional](#optional)
@@ -83,6 +85,20 @@ Steam relaunches automatically. When it finishes, close and reopen it normally.
 
 ---
 
+# Bluetooth game controllers
+
+Applies compatibility fixes so Bluetooth game controllers pair reliably and stay connected: dual-mode pairing (`ControllerMode=dual`), `AlwaysPairable`, `FastConnectable`, and BR/EDR retransmission mode (ERTM) disabled - a common cause of controllers that pair but never actually connect.
+
+Bluetooth headsets are also kept on the A2DP profile (full stereo audio) instead of auto-switching to the lower-quality HSP/HFP profile whenever a controller or other input device connects.
+
+---
+
+# Audio auto-suspend
+
+WirePlumber's automatic suspension of idle audio devices is disabled. Without this, DACs, HDMI audio, and many onboard codecs produce an audible pop/click and clip the first ~200ms of audio when a sink or source wakes up from being suspended.
+
+---
+
 # Keyboard shortcuts
 
 | Action | Shortcut |
@@ -95,6 +111,8 @@ Steam relaunches automatically. When it finishes, close and reopen it normally.
 | Screenshot (region / screen) | `Mod` + `P` / `Mod` + `Ctrl` + `P` |
 | Focus column left/right | `Mod` + `←` / `→` |
 | Move column left/right | `Mod` + `Ctrl` + `←` / `→` |
+| Switch workspace | `Mod` + `1` … `9` |
+| Move column to workspace | `Mod` + `Ctrl` + `1` … `9` |
 | Maximize column | `Mod` + `F` |
 | Close window | `Mod` + `Q` |
 
@@ -120,8 +138,8 @@ A full list is in `~/.config/niri/config.kdl`.
 - Localsend
 - Bazaar
 - Kitty
-- Wine
 - VLC
+- Wine
 
 ### CLI Tools
 - `mise`, `zoxide`, `fastfetch`, `fd-find`, `slurp`
