@@ -82,8 +82,6 @@ Steam relaunches automatically. When it finishes, close and reopen it normally.
 
 # Keyboard shortcuts
 
-All shortcuts use the **Super** (`Mod`) key. Press `Mod` + `Shift` + `/` to show the in-session cheat sheet.
-
 | Action | Shortcut |
 |--------|----------|
 | Terminal (kitty) | `Mod` + `Return` |
@@ -91,15 +89,11 @@ All shortcuts use the **Super** (`Mod`) key. Press `Mod` + `Shift` + `/` to show
 | Files (Nautilus) | `Mod` + `N` |
 | Launcher | `Mod` + `Space` |
 | Overview | `Mod` + `O` |
-| Screenshot (region / screen / window) | `Print` / `Ctrl` + `Print` / `Alt` + `Print` |
+| Screenshot (region / screen) | `Mod` + `P` / `Mod` + `Ctrl` + `P` |
 | Focus column left/right | `Mod` + `←` / `→` |
-| Focus window down/up | `Mod` + `↓` / `↑` |
 | Move column left/right | `Mod` + `Ctrl` + `←` / `→` |
-| Switch workspace | `Mod` + `PgUp` / `PgDn` (or `Mod` + `U` / `I`) |
-| Move column to workspace | `Mod` + `Ctrl` + `PgUp` / `PgDn` |
 | Maximize column | `Mod` + `F` |
 | Close window | `Mod` + `Q` |
-| Quit niri | `Mod` + `Shift` + `E` |
 
 A full list is in `~/.config/niri/config.kdl`.
 
@@ -121,12 +115,12 @@ A full list is in `~/.config/niri/config.kdl`.
 - Libre Menu Editor
 - Zen Browser
 - Localsend
-- Monique
 - Bazaar
 - Kitty
+- VLC
 
 ### CLI Tools
-- `mise`, `pipx`, `zoxide`, `fastfetch`, `fd-find`, `wf-recorder`, `slurp`
+- `mise`, `zoxide`, `fastfetch`, `fd-find`, `slurp`
 
 ---
 
@@ -139,7 +133,6 @@ A full list is in `~/.config/niri/config.kdl`.
 - qBittorrent
 - Telegram
 - Spotify
-- VLC
 
 ### Gaming
 - Steam
@@ -154,7 +147,6 @@ A full list is in `~/.config/niri/config.kdl`.
 - Neovim
 
 ## System
-- Shell: **bash** (default) or **fish**
 - Logitech K380 function keys
 - Remove LibreOffice
 - Git identity
