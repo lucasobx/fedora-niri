@@ -439,13 +439,13 @@ DNF_PKGS=(
   adw-gtk3-theme
   gnome-tweaks
   fastfetch
-  wine-core
   fd-find
   zoxide
   kitty
   slurp
   unzip
   unrar
+  wine
   7zip
   zip
   vlc
@@ -700,6 +700,15 @@ step "13 - Setting up directories and assets"
 mkdir -p ~/Pictures
 [[ -d "$ASSETS_DIR/Wallpapers" ]] && mv "$ASSETS_DIR/Wallpapers" ~/Pictures/Wallpapers
 info "Wallpapers installed to ~/Pictures/Wallpapers"
+
+# .desktop entries -> ~/.local/share/applications/
+if [[ -d "$ASSETS_DIR/applications" ]] && [[ -n "$(ls -A "$ASSETS_DIR/applications" 2>/dev/null)" ]]; then
+  mkdir -p ~/.local/share/applications
+  mv "$ASSETS_DIR"/applications/* ~/.local/share/applications/
+  rmdir "$ASSETS_DIR/applications" 2>/dev/null || true
+  update-desktop-database ~/.local/share/applications 2>/dev/null || true
+  info "Desktop entries installed to ~/.local/share/applications"
+fi
 
 # VLC config -> ~/.config/vlc
 if [[ -d "$ASSETS_DIR/vlc" ]]; then
