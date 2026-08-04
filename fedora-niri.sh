@@ -134,7 +134,7 @@ save_answers() {
     OPT_STEAM OPT_GAMEMODE OPT_BOTTLES OPT_GEARLEVER OPT_RESOURCES OPT_HEROIC \
     OPT_PROTONPLUS OPT_TELEGRAM OPT_SPOTIFY OPT_K380 OPT_REMOVE_LIBREOFFICE \
     KBD_LAYOUT KBD_VARIANT KBD_LABEL EDP_SCALE OPT_GIT GIT_NAME GIT_EMAIL \
-    SHELL_CHOICE GPU_VENDOR HAS_INTEL_IGPU NVIDIA_BRANCH TARGET_USER > "$1"
+    GPU_VENDOR HAS_INTEL_IGPU NVIDIA_BRANCH TARGET_USER > "$1"
 }
 
 collect_answers() {
@@ -257,19 +257,6 @@ collect_answers() {
     read -rp "  Email for git: "     GIT_EMAIL
   fi
 
-  # --- Shell ---
-  echo -e "\n${BOLD}Shell:${RESET}"
-  echo "    1) bash (keep as default)"
-  echo "    2) fish"
-  while true; do
-    read -rp "  Select shell [1/2]: " _shell_choice
-    case "$_shell_choice" in
-      1) SHELL_CHOICE="bash"; break ;;
-      2) SHELL_CHOICE="fish"; break ;;
-      *) echo "    Please enter 1 or 2." ;;
-    esac
-  done
-
   # --- Remove LibreOffice? ---
   echo -e "\n${BOLD}LibreOffice removal:${RESET}"
   OPT_REMOVE_LIBREOFFICE=false; ask_yn "Remove LibreOffice (pre-installed)?" && OPT_REMOVE_LIBREOFFICE=true || true
@@ -284,7 +271,6 @@ collect_answers() {
   echo -e "  Flatpak opt:   telegram=${OPT_TELEGRAM} heroic=${OPT_HEROIC} spotify=${OPT_SPOTIFY} bottles=${OPT_BOTTLES} protonplus=${OPT_PROTONPLUS} gearlever=${OPT_GEARLEVER} resources=${OPT_RESOURCES}"
   echo -e "  Video player:  vlc (flatpak)"
   echo -e "  Graphics:      $(if [[ "$GPU_VENDOR" == "nvidia" ]]; then echo "nvidia (${NVIDIA_BRANCH})$(if $HAS_INTEL_IGPU; then echo " + intel igpu"; fi)"; else echo "$GPU_VENDOR"; fi)"
-  echo -e "  Shell:         ${SHELL_CHOICE}"
   echo -e "  Git identity:  ${OPT_GIT} $(if $OPT_GIT; then echo "${GIT_NAME} <${GIT_EMAIL}>"; fi)"
   echo -e "  Remove LibreOffice: ${OPT_REMOVE_LIBREOFFICE}"
   echo ""
@@ -510,50 +496,44 @@ mark_done 6
 fi
 
 # =============================================================================
-# Step 7 - Configure shell
+# Step 7 - Configure ~/.bashrc
 # =============================================================================
 if pending 7; then
-if [[ "$SHELL_CHOICE" == "bash" ]]; then
-  step "7 - Configuring ~/.bashrc"
+step "7 - Configuring ~/.bashrc"
 
-  if grep -q '_ZO_DOCTOR' ~/.bashrc; then
-    warn "Zoxide block already present in ~/.bashrc - skipping"
-  else
-    cat >> ~/.bashrc << 'EOF'
+if grep -q 'export EDITOR=' ~/.bashrc; then
+  warn "EDITOR/VISUAL already set in ~/.bashrc - skipping"
+else
+  cat >> ~/.bashrc << 'EOF'
 
-# Zoxide
+# Default editor
+export EDITOR="nvim"
+export VISUAL="nvim"
+EOF
+  info "EDITOR/VISUAL set to nvim in ~/.bashrc"
+fi
+
+if grep -q 'mise activate bash' ~/.bashrc; then
+  warn "mise block already present in ~/.bashrc - skipping"
+else
+  cat >> ~/.bashrc << 'EOF'
+
+# Mise
+eval "$(mise activate bash)"
+EOF
+  info "mise activation added to ~/.bashrc"
+fi
+
+if grep -q '_ZO_DOCTOR' ~/.bashrc; then
+  warn "Zoxide block already present in ~/.bashrc - skipping"
+else
+  cat >> ~/.bashrc << 'EOF'
+
+# Zoxide (keep this at the end of the file)
 export _ZO_DOCTOR=0
 eval "$(zoxide init bash --cmd cd)"
 EOF
-    info "Zoxide block added to ~/.bashrc"
-  fi
-
-  if grep -q 'mise activate bash' ~/.bashrc; then
-    warn "mise block already present in ~/.bashrc - skipping"
-  else
-    echo 'eval "$(~/.local/bin/mise activate bash)"' >> ~/.bashrc
-    info "mise activation added to ~/.bashrc"
-  fi
-else
-  step "7 - Installing and configuring fish shell"
-  sudo dnf install -y fish
-  _FISH_BIN="$(command -v fish)"
-  if ! grep -qxF "$_FISH_BIN" /etc/shells; then
-    echo "$_FISH_BIN" | sudo tee -a /etc/shells > /dev/null
-  fi
-  sudo chsh -s "$_FISH_BIN" "$TARGET_USER"
-  mkdir -p ~/.config/fish
-  cat > ~/.config/fish/config.fish << 'EOF'
-fish_add_path $HOME/.local/bin $HOME/bin
-/usr/bin/mise activate fish | source
-if status is-interactive
-    if command -v zoxide > /dev/null
-        zoxide init fish --cmd cd | source
-    end
-    set -U fish_greeting ""
-end
-EOF
-  info "fish installed, set as default shell, and ~/.config/fish/config.fish written"
+  info "Zoxide block added to ~/.bashrc"
 fi
 mark_done 7
 fi
