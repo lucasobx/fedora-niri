@@ -1,0 +1,7 @@
+include "./autostart.kdl"
+include "./display.kdl"
+include "./layout.kdl"
+include "./input.kdl"
+include "./rules.kdl"
+include "./binds.kdl"
+include "./misc.kdl"

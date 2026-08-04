@@ -1,0 +1,24 @@
+input {
+  keyboard {
+    xkb {
+      layout "us"
+      options "ctrl:nocaps"
+      variant "intl"
+    }
+    repeat-delay 300
+    repeat-rate 25
+    numlock
+  }
+
+  touchpad {
+    tap
+    natural-scroll
+  }
+
+  mouse {}
+
+  trackpoint {}
+
+  warp-mouse-to-focus
+  focus-follows-mouse max-scroll-amount="0%"
+}
