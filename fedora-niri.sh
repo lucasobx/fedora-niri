@@ -223,8 +223,8 @@ collect_answers() {
   while true; do
     read -rp "  Select keyboard layout [1/2]: " _kbd_choice
     case "$_kbd_choice" in
-      1) KBD_LAYOUT="us"; KBD_VARIANT='variant "intl"'; KBD_LABEL="International"; break ;;
-      2) KBD_LAYOUT="br"; KBD_VARIANT="";               KBD_LABEL="ABNT";          break ;;
+      1) KBD_LAYOUT="us"; KBD_VARIANT="intl"; KBD_LABEL="International"; break ;;
+      2) KBD_LAYOUT="br"; KBD_VARIANT="";     KBD_LABEL="ABNT";          break ;;
       *) echo "    Please enter 1 or 2." ;;
     esac
   done
@@ -316,7 +316,7 @@ else
   warn "fedora-third-party not found; skipping (is this Fedora Workstation?)"
 fi
 
-# Ensure the Flathub remote exists (step 5 installs from it)
+# Ensure the Flathub remote exists (step 6 installs from it)
 sudo flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
 info "Flathub remote ensured"
 
@@ -1014,7 +1014,7 @@ EOF
 
   # Without these the GPU state is not saved/restored across suspend and
   # hibernate, which shows up as corruption or a hang on resume.
-  for _svc in nvidia-suspend.service nvidia-resume.service nvidia-hibernate.service; do
+  for _svc in nvidia-suspend.service nvidia-resume.service nvidia-hibernate.service nvidia-powerd.service; do
     if systemctl cat "$_svc" &>/dev/null; then
       sudo systemctl enable "$_svc" &>/dev/null && info "$_svc enabled" || warn "Could not enable $_svc"
     else
@@ -1027,7 +1027,8 @@ EOF
   else
     # Shader cache + Proton tweaks
     sudo tee -a /etc/environment > /dev/null << 'EOF'
-# Nvidia shader cache: skip cleanup on launch (prevents stutter spikes)
+# Nvidia shader cache: 12GB size + skip cleanup on launch (prevents stutter spikes)
+__GL_SHADER_DISK_CACHE_SIZE=12000000000
 __GL_SHADER_DISK_CACHE_SKIP_CLEANUP=1
 # Fixes Steam stuttering after 25-30+ minutes of play
 LD_PRELOAD=""
