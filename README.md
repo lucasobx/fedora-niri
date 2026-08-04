@@ -137,9 +137,9 @@ A full list is in `~/.config/niri/config.kdl`.
 - Zen Browser
 - Localsend
 - Bazaar
+- Wine
 - Kitty
 - VLC
-- Wine
 
 ### CLI Tools
 - `mise`, `zoxide`, `fastfetch`, `fd-find`, `slurp`
