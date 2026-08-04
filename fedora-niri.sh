@@ -417,8 +417,8 @@ DNF_PKGS=(
   pipewire-codec-aptx
   adw-gtk3-theme
   gnome-tweaks
-  wf-recorder
   fastfetch
+  wine-core
   fd-find
   zoxide
   kitty
@@ -455,10 +455,7 @@ DNF_PKGS+=(zen-browser)
 # Lower CPU/I/O priority for this large transaction so the end-of-transaction
 # file triggers don't starve the graphical compositor and freeze the session
 sudo nice -n 19 ionice -c 3 dnf install -y "${DNF_PKGS[@]}"
-
-sudo dnf install -y pipx
-pipx ensurepath
-info "Base packages and pipx installed"
+info "Base packages installed"
 mark_done 4
 fi
 
