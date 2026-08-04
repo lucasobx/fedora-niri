@@ -396,6 +396,7 @@ sudo dnf remove -y \
   malcontent-tools \
   ibus-typing-booster \
   gnome-color-manager \
+  gnome-classic-session \
   gnome-software || true
 
 # Remove unwanted third-party repositories
