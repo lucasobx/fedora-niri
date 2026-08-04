@@ -5,6 +5,7 @@ Automated setup script for a clean, minimal Fedora 44 workstation built around [
 > [!NOTE]
 > - Run the script as a regular user (not root), `sudo` is invoked internally when needed.
 > - Most pre-installed GNOME apps are removed to keep the system minimal, including `GNOME Software`. Manage Flatpaks with `Bazaar`, installed by default.
+> - Firefox is removed at the end of setup. `Zen Browser` is installed as the default browser instead.
 
 ---
 
@@ -56,6 +57,8 @@ The script detects your GPU automatically and sets up the matching stack:
 - **NVIDIA** - proprietary drivers from RPM Fusion (you confirm the branch: *current* for Turing / RTX 20 and newer, or *legacy 580xx* for Maxwell / Pascal), DRM modeset for Wayland, and the niri VRAM-usage fix.
 - **Intel** - `intel-media-driver` with `LIBVA_DRIVER_NAME=iHD` for VA-API.
 - **AMD** - in-kernel `amdgpu` + Mesa, with the VA/VDPAU drivers swapped to the RPM Fusion `freeworld` builds for full H.264 / H.265 hardware decoding.
+
+On NVIDIA and AMD systems, [`GPU Screen Recorder`](https://flathub.org/apps/com.dec05eba.gpu_screen_recorder) is installed automatically for hardware-accelerated screen capture.
 
 > [!NOTE]
 > If an NVIDIA GPU is detected, the drivers become active after rebooting (check with `nvidia-smi`). Make sure **Secure Boot is disabled**.
@@ -117,6 +120,7 @@ A full list is in `~/.config/niri/config.kdl`.
 - Localsend
 - Bazaar
 - Kitty
+- Wine
 - VLC
 
 ### CLI Tools
@@ -139,6 +143,7 @@ A full list is in `~/.config/niri/config.kdl`.
 - Heroic
 - Bottles
 - ProtonPlus
+- GameMode + MangoHud
 
 ### Development tools
 - Distrobox (+ DistroShelf)
