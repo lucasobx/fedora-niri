@@ -815,6 +815,29 @@ info "Nautilus default sort order set to Type"
 gsettings set org.gnome.desktop.privacy remember-recent-files false
 rm -f ~/.local/share/recently-used.xbel
 info "GNOME File History disabled and cleared"
+
+# Unpin everything from the dash/dock
+gsettings set org.gnome.shell favorite-apps "[]"
+info "GNOME dock favorites cleared"
+
+# Disable the top-left hot corner
+gsettings set org.gnome.desktop.interface enable-hot-corners false
+info "GNOME hot corner disabled"
+
+# Disable drag-to-edge window snap/resize
+gsettings set org.gnome.mutter edge-tiling false
+info "GNOME edge-tiling (drag-to-edge resize) disabled"
+
+# Wallpaper
+_WALL="$HOME/Pictures/Wallpapers/01.jpg"
+if [[ -f "$_WALL" ]]; then
+  gsettings set org.gnome.desktop.background picture-uri "file://$_WALL"
+  gsettings set org.gnome.desktop.background picture-uri-dark "file://$_WALL"
+  gsettings set org.gnome.desktop.background picture-options "zoom"
+  info "GNOME wallpaper set to $_WALL"
+else
+  warn "$_WALL not found - skipping GNOME wallpaper"
+fi
 mark_done 16
 fi
 
