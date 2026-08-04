@@ -594,9 +594,6 @@ else
   sudo tee -a /etc/environment > /dev/null << 'EOF'
 # Keep GTK4 on the OpenGL renderer (opens Nautilus faster in niri)
 GSK_RENDERER=gl
-
-# Toolkit variables (Qt/Electron/GTK) live in the niri config's environment
-# block instead, so they only apply inside the graphical session.
 EOF
   info "Session environment variables written to /etc/environment"
 fi
@@ -968,15 +965,12 @@ step "15 - Installing Numix icons and configuring themes"
 
 _NUMIX_TMP="$(mktemp -d -p "$TMP_ROOT")"
 
-# Clone and install inside a subshell so the cwd change never leaks out.
 (
   cd "$_NUMIX_TMP"
   git clone https://github.com/numixproject/numix-icon-theme
   git clone https://github.com/numixproject/numix-icon-theme-circle
   git clone https://github.com/numixproject/numix-folders
 
-  # Remove any prior copies first so a re-run after a partial failure lands the
-  # themes cleanly instead of nesting them (e.g. /usr/share/icons/Numix/Numix).
   sudo rm -rf /usr/share/icons/Numix \
               /usr/share/icons/Numix-Light \
               /usr/share/icons/Numix-Circle \
